@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/http/auth_pages.php';
+require_once __DIR__ . '/http/customers.php';
 
 route('GET', '/', function (): void {
     require_login();
@@ -45,7 +46,22 @@ route('GET', '/board', function (): void {
 
 route('GET', '/customers', function (): void {
     require_login();
-    render('simple', ['title' => t('customers'), 'body' => t('coming_soon')]);
+    customers_index();
+});
+
+route('GET', '/customers/new', function (): void {
+    require_login();
+    customers_form();
+});
+
+route('POST', '/customers', function (): void {
+    require_login();
+    customers_save();
+});
+
+route('GET', '/customers/{id}', function (array $params): void {
+    require_login();
+    customers_show((string) $params['id']);
 });
 
 route('GET', '/more', function (): void {

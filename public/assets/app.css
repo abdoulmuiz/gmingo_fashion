@@ -144,6 +144,63 @@ input, select, textarea {
     margin: 8px 0;
 }
 
+.split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.btn-small { width: auto; padding: 10px 14px; }
+
+.link-card, .line {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.meta { color: var(--muted); margin: 4px 0 0; }
+
+.tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f3e6c8;
+    color: #7c4a03;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 14px 0;
+}
+
+.stats div {
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.stats span { display: block; color: var(--muted); font-size: 0.75rem; }
+.stats strong { font-size: 0.95rem; }
+
+.actions { display: flex; gap: 8px; }
+.actions .btn { flex: 1; }
+
+.line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+}
+
+h2 { font-size: 1.05rem; margin: 0 0 8px; }
+
 @media (min-width: 900px) {
     .app { width: min(1100px, 100%); }
     .bottom-nav { left: 50%; right: auto; width: min(1100px, 100%); transform: translateX(-50%); }

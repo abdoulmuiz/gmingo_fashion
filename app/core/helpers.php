@@ -158,6 +158,22 @@ function phone_intl(string $local): string
     return '234' . substr($local, 1);
 }
 
+function tel_href(string $local): string
+{
+    return 'tel:+' . phone_intl($local);
+}
+
+function whatsapp_href(string $local): string
+{
+    return 'https://wa.me/' . phone_intl($local);
+}
+
+function like_contains(string $value): string
+{
+    $value = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    return '%' . $value . '%';
+}
+
 function render(string $view, array $data = []): void
 {
     if (!preg_match('#^[a-z0-9_/]+$#', $view)) {

@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/domain/customers.php';
+
+function customers_index(): void
+{
+    $query = trim((string) ($_GET['q'] ?? ''));
+    render('customers/index', [
+        'title' => t('customers'),
+        'query' => $query,
+        'customers' => customer_search($query),
+    ]);
+}
+
+function customers_form(array $errors = [], array $old = []): void
+{
+    render('customers/form', [
+        'title' => t('new_customer'),
+        'errors' => $errors,
+        'old' => $old,
+    ]);
+}
+
+function customers_save(): void
+{
+    csrf_check();
+    $input = [
+        'name' => (string) ($_POST['name'] ?? ''),
+        'phone' => (string) ($_POST['phone'] ?? ''),
+        'gender' => (string) ($_POST['gender'] ?? ''),
+        'customer_type' => (string) ($_POST['customer_type'] ?? ''),
+    ];
+    $result = customer_create($input);
+    if (isset($result['errors'])) {
+        customers_form($result['errors'], $input);
+        return;
+    }
+    redirect('/customers/' . $result['id']);
+}
+
+function customers_show(string $id): void
+{
+    $profile = customer_profile($id);
+    if ($profile === null) {
+        http_response_code(404);
+        render('simple', ['title' => t('not_found'), 'body' => t('not_found_body')]);
+        return;
+    }
+    render('customers/show', [
+        'title' => $profile['name'],
+        'customer' => $profile,
+    ]);
+}
