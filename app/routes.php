@@ -8,6 +8,7 @@ require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
 require_once __DIR__ . '/fashion/controllers/stages.php';
 require_once __DIR__ . '/fashion/controllers/payments.php';
+require_once __DIR__ . '/fashion/controllers/measurements.php';
 
 route('GET', '/', function (): void {
     require_login();
@@ -104,6 +105,11 @@ route('GET', '/customers/{id}', function (array $params): void {
     customers_show((string) $params['id']);
 });
 
+route('POST', '/customers/{id}/measurements', function (array $params): void {
+    require_module('fashion.measurements');
+    measurement_submit((string) $params['id']);
+});
+
 route('GET', '/settings', function (): void {
     settings_form();
 });
@@ -118,6 +124,14 @@ route('GET', '/settings/stages', function (): void {
 
 route('POST', '/settings/stages', function (): void {
     stages_submit();
+});
+
+route('GET', '/settings/garments', function (): void {
+    garments_form();
+});
+
+route('POST', '/settings/garments', function (): void {
+    garments_submit();
 });
 
 route('GET', '/more', function (): void {

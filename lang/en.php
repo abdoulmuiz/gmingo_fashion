@@ -132,6 +132,7 @@ return [
     'cm' => 'Centimetres',
     'history' => 'Earlier versions',
     'no_measurements' => 'No measurements yet.',
+    'invalid_measurement' => 'Enter a measurement such as 16 or 16.5.',
     'saved' => 'Saved.',
     'save_failed' => 'Could not save. Try again.',
     'good_morning' => 'Good morning',

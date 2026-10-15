@@ -29,3 +29,64 @@
         <?php if ($orderOpen): ?></a><?php else: ?></div><?php endif; ?>
     <?php endforeach; ?>
 </section>
+<?php if (module_enabled('fashion.measurements') && is_array($measure)): ?>
+    <section class="card">
+        <h2><?= e(t('measurements')) ?></h2>
+        <?php if ($measure['garments'] !== []): ?>
+            <div class="tabs">
+                <?php foreach ($measure['garments'] as $garment): ?>
+                    <a class="<?= $garment['id'] === $measure['garment_id'] ? 'active' : '' ?>" href="<?= e(url('/customers/' . $customer['id'] . '?garment=' . $garment['id'])) ?>"><?= e($garment['name']) ?></a>
+                <?php endforeach; ?>
+            </div>
+            <?php if ($measure['placeholder']): ?>
+                <p class="meta"><?= e(t('placeholder_note')) ?></p>
+            <?php endif; ?>
+            <?php if ($measure['fields'] !== []): ?>
+                <form method="post" action="<?= e(url('/customers/' . $customer['id'] . '/measurements')) ?>">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="garment_id" value="<?= e($measure['garment_id']) ?>">
+                    <?php foreach ($measure['fields'] as $field): ?>
+                        <label><?= e((string) $field['name']) ?>
+                            <input name="values[<?= e((string) $field['field_key']) ?>]" inputmode="decimal" value="<?= e((string) ($measure['prefill']['values'][(string) $field['field_key']] ?? '')) ?>">
+                        </label>
+                    <?php endforeach; ?>
+                    <label><?= e(t('unit')) ?>
+                        <select name="unit">
+                            <option value="inches" <?= $measure['prefill']['unit'] === 'inches' ? 'selected' : '' ?>><?= e(t('inches')) ?></option>
+                            <option value="cm" <?= $measure['prefill']['unit'] === 'cm' ? 'selected' : '' ?>><?= e(t('cm')) ?></option>
+                        </select>
+                    </label>
+                    <div class="actions">
+                        <button class="btn" type="submit" name="action" value="take"><?= e(t('take_measurement')) ?></button>
+                        <button class="btn btn-quiet" type="submit" name="action" value="update"><?= e(t('update_measurement')) ?></button>
+                    </div>
+                </form>
+            <?php endif; ?>
+        <?php endif; ?>
+        <?php if ($measure['latest'] === []): ?>
+            <p><?= e(t('no_measurements')) ?></p>
+        <?php endif; ?>
+        <?php foreach ($measure['latest'] as $version): ?>
+            <h2><?= e($version['garment_name']) ?></h2>
+            <p class="meta"><?= e(date('j M Y H:i', strtotime((string) $version['created_at']))) ?> · <?= e(t($version['unit'] === 'cm' ? 'cm' : 'inches')) ?></p>
+            <?php foreach ($version['lines'] as $line): ?>
+                <div class="line">
+                    <strong><?= e($line['name']) ?></strong>
+                    <span><?= e($line['value']) ?></span>
+                </div>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+        <?php if ($measure['history'] !== []): ?>
+            <h2><?= e(t('history')) ?></h2>
+            <?php foreach ($measure['history'] as $version): ?>
+                <p class="meta"><?= e($version['garment_name']) ?> · <?= e(date('j M Y H:i', strtotime((string) $version['created_at']))) ?> · <?= e(t($version['unit'] === 'cm' ? 'cm' : 'inches')) ?></p>
+                <?php foreach ($version['lines'] as $line): ?>
+                    <div class="line">
+                        <strong><?= e($line['name']) ?></strong>
+                        <span><?= e($line['value']) ?></span>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </section>
+<?php endif; ?>

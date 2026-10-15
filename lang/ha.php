@@ -132,6 +132,7 @@ return [
     'cm' => 'Santimitoci',
     'history' => 'Tsoffin sigogi',
     'no_measurements' => 'Babu auna jiki tukuna.',
+    'invalid_measurement' => 'Rubuta auna jiki kamar 16 ko 16.5.',
     'saved' => 'An ajiye.',
     'save_failed' => 'Ba a iya ajiye ba. Sake gwadawa.',
     'good_morning' => 'Ina kwana',

@@ -15,4 +15,7 @@
     <?php if (module_enabled('fashion.production')): ?>
         <p><a href="<?= e(url('/settings/stages')) ?>"><?= e(t('stages_settings')) ?></a></p>
     <?php endif; ?>
+    <?php if (module_enabled('fashion.measurements')): ?>
+        <p><a href="<?= e(url('/settings/garments')) ?>"><?= e(t('garment_settings')) ?></a></p>
+    <?php endif; ?>
 </section>

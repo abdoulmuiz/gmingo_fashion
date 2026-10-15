@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/domain/customers.php';
+require_once dirname(__DIR__, 2) . '/domain/measurements.php';
 
 function customers_index(): void
 {
@@ -55,5 +56,6 @@ function customers_show(string $id): void
     render('customers/show', [
         'title' => $profile['name'],
         'customer' => $profile,
+        'measure' => module_enabled('fashion.measurements') ? measurement_profile($id, (string) ($_GET['garment'] ?? '')) : null,
     ]);
 }
