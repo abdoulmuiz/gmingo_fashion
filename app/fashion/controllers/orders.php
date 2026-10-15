@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/domain/orders.php';
+require_once dirname(__DIR__, 2) . '/domain/stages.php';
 
 function orders_index(): void
 {
@@ -66,5 +67,6 @@ function orders_show(string $id): void
     render('orders/show', [
         'title' => $order['order_number'],
         'order' => $order,
+        'next_stage' => module_enabled('fashion.production') ? stage_next($id) : null,
     ]);
 }

@@ -6,6 +6,7 @@ require_once __DIR__ . '/fashion/controllers/auth_pages.php';
 require_once __DIR__ . '/fashion/controllers/customers.php';
 require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
+require_once __DIR__ . '/fashion/controllers/stages.php';
 
 route('GET', '/', function (): void {
     require_login();
@@ -57,9 +58,14 @@ route('GET', '/orders/{id}', function (array $params): void {
     orders_show((string) $params['id']);
 });
 
+route('POST', '/orders/{id}/stage', function (array $params): void {
+    require_module('fashion.production');
+    stage_move_submit((string) $params['id']);
+});
+
 route('GET', '/board', function (): void {
     require_module('fashion.production');
-    render('simple', ['title' => t('board'), 'body' => t('coming_soon')]);
+    board_show();
 });
 
 route('GET', '/customers', function (): void {
@@ -88,6 +94,14 @@ route('GET', '/settings', function (): void {
 
 route('POST', '/settings', function (): void {
     settings_submit();
+});
+
+route('GET', '/settings/stages', function (): void {
+    stages_form();
+});
+
+route('POST', '/settings/stages', function (): void {
+    stages_submit();
 });
 
 route('GET', '/more', function (): void {

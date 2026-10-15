@@ -8,6 +8,7 @@ return [
     'home' => 'Home',
     'orders' => 'Orders',
     'board' => 'Board',
+    'board_needs_orders' => 'This board works with orders. Work orders for factories come later.',
     'customers' => 'Customers',
     'more' => 'More',
     'main_menu' => 'Main menu',

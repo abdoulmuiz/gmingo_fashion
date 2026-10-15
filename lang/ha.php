@@ -8,6 +8,7 @@ return [
     'home' => 'Gida',
     'orders' => 'Oda',
     'board' => 'Allo',
+    'board_needs_orders' => 'Wannan allo yana aiki da oda. Umarnin aiki na masana\'antu na gaba.',
     'customers' => 'Abokan ciniki',
     'more' => 'Kara',
     'main_menu' => 'Babban menu',

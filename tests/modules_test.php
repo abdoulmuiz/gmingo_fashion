@@ -94,6 +94,7 @@ ob_start();
 router_dispatch('GET', '/board');
 $board = (string) ob_get_clean();
 check(str_contains($board, t('board')), 'enabled production page opens');
+check(str_contains($board, t('board_needs_orders')), 'factory board explains that orders are off');
 
 $brand = module_shop('brand', 'brand@example.com', '08033333333');
 $brandKeys = [

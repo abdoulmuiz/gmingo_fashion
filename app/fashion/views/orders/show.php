@@ -9,6 +9,16 @@
     <?php if (module_enabled('fashion.production') && $order['stage_name'] !== null): ?>
         <p><?= e(t('stage')) ?>: <?= e($order['stage_name']) ?></p>
     <?php endif; ?>
+    <?php if (module_enabled('fashion.production')): ?>
+        <?php if ($next_stage !== null): ?>
+            <form method="post" action="<?= e(url('/orders/' . $order['id'] . '/stage')) ?>">
+                <?= csrf_field() ?>
+                <button class="btn" type="submit"><?= e(t('move_next')) ?></button>
+            </form>
+        <?php else: ?>
+            <p><?= e(t('no_next_stage')) ?></p>
+        <?php endif; ?>
+    <?php endif; ?>
     <div class="stats">
         <div><span><?= e(t('total')) ?></span><strong><?= e(money((int) $order['total_kobo'])) ?></strong></div>
         <?php if (module_enabled('fashion.finance')): ?>
