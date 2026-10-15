@@ -85,6 +85,66 @@ function business_register(array $input): array
     return ['user_id' => $userId, 'tenant_id' => $tenantId];
 }
 
+function auth_find_user_by_email(string $email): ?array
+{
+    $rows = platform_query_unsafe(
+        'SELECT id, tenant_id, name, email, password_hash, lang, active FROM fashion_users WHERE email = :email LIMIT 1',
+        ['email' => $email]
+    );
+    $row = $rows[0] ?? null;
+    return is_array($row) ? $row : null;
+}
+
+function auth_rate_path(string $email): string
+{
+    $dir = dirname(__DIR__, 2) . '/storage/ratelimit';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0770, true);
+    }
+    $key = hash('sha256', strtolower($email) . '|' . client_ip());
+    return $dir . '/' . $key . '.json';
+}
+
+function auth_recent_attempts(string $email): array
+{
+    $path = auth_rate_path($email);
+    if (!is_file($path)) {
+        return [];
+    }
+    $decoded = json_decode((string) file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+    $cutoff = time() - 300;
+    $recent = [];
+    foreach ($decoded as $stamp) {
+        if (is_int($stamp) && $stamp >= $cutoff) {
+            $recent[] = $stamp;
+        }
+    }
+    return $recent;
+}
+
+function auth_too_many_attempts(string $email): bool
+{
+    return count(auth_recent_attempts($email)) >= 5;
+}
+
+function auth_register_failure(string $email): void
+{
+    $recent = auth_recent_attempts($email);
+    $recent[] = time();
+    file_put_contents(auth_rate_path($email), json_encode($recent));
+}
+
+function auth_clear_attempts(string $email): void
+{
+    $path = auth_rate_path($email);
+    if (is_file($path)) {
+        unlink($path);
+    }
+}
+
 function login_dummy_hash(): string
 {
     static $hash = null;

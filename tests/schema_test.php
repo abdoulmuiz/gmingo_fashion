@@ -85,6 +85,7 @@ foreach ($iterator as $file) {
 }
 
 $auth = (string) file_get_contents(dirname(__DIR__) . '/app/core/auth.php');
-check(str_contains($auth, 'platform_query_unsafe'), 'sign-up and login use the platform query');
-check(str_contains($auth, 'WHERE email = :email LIMIT 1'), 'the platform lookup is the email check');
+$accounts = (string) file_get_contents(dirname(__DIR__) . '/app/domain/accounts.php');
+check(str_contains($accounts, 'platform_query_unsafe'), 'sign-up and login use the platform query');
+check(str_contains($accounts, 'WHERE email = :email LIMIT 1'), 'the platform lookup is the email check');
 check(!preg_match('/->prepare\s*\(/', $auth), 'auth does not prepare SQL itself');

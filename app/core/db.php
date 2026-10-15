@@ -372,7 +372,7 @@ function platform_query_unsafe(string $sql, array $params = []): array
     $lookupFunction = (string) ($trace[1]['function'] ?? '');
     $lookupFile = str_replace('\\', '/', (string) ($trace[1]['file'] ?? ''));
     $ownerFunction = (string) ($trace[2]['function'] ?? '');
-    $fromSignupOrLogin = str_ends_with($callFile, '/app/core/auth.php')
+    $fromSignupOrLogin = str_ends_with($callFile, '/app/domain/accounts.php')
         && $lookupFunction === 'auth_find_user_by_email'
         && str_ends_with($lookupFile, '/app/domain/accounts.php')
         && in_array($ownerFunction, ['business_register', 'login_user'], true);

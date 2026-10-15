@@ -34,6 +34,7 @@ function shop_seed_defaults(): void
             ['cuff', 'cuff'],
             ['top_length', 'top length'],
         ]],
+        // confirm with Kano tailors
         ['senator', 'Senator', 1, [
             ['neck', 'neck'],
             ['chest', 'chest'],

@@ -28,7 +28,7 @@ return [
     'have_account' => 'Already have a shop?',
     'need_account' => 'New shop?',
     'login_failed' => 'Email or password is not correct.',
-    'rate_limited' => 'Too many tries. Wait a few minutes and try again.',
+    'rate_limited' => 'Too many tries. Wait 5 minutes and try again.',
     'language' => 'Language',
     'english' => 'English',
     'hausa' => 'Hausa',

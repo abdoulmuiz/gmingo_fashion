@@ -29,7 +29,6 @@ auth_login(uuid(), uuid());
 ob_start();
 router_dispatch('GET', '/orders');
 $html = (string) ob_get_clean();
-auth_logout();
 check(str_contains($html, t('coming_soon')), 'orders route renders');
 check(str_contains($html, 'bottom-nav'), 'layout includes bottom navigation');
 check(str_contains($html, t('home')) || str_contains($html, 'Home') || str_contains($html, 'Gida'), 'nav has Home');
@@ -54,6 +53,7 @@ ob_start();
 router_dispatch('HEAD', '/');
 ob_end_clean();
 check(http_response_code() === 200, 'HEAD home returns 200');
+auth_logout();
 
 $ht = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
 foreach (['config', 'app', 'database', 'tools', 'tests', 'storage', 'lang', 'docs', '\\.git', 'public/'] as $needle) {

@@ -28,7 +28,7 @@ return [
     'have_account' => 'Kana da shago tuni?',
     'need_account' => 'Sabon shago?',
     'login_failed' => 'Imel ko kalmar sirri ba daidai ba ne.',
-    'rate_limited' => 'An gwada sau da yawa. Jira mintoci kadan ka sake gwadawa.',
+    'rate_limited' => 'An gwada sau da yawa. Jira mintoci 5 ka sake gwadawa.',
     'language' => 'Harshe',
     'english' => 'Turanci',
     'hausa' => 'Hausa',

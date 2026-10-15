@@ -33,6 +33,7 @@ function router_dispatch(string $method, string $path): void
         $handler($params);
         return;
     }
+    require_login();
     http_response_code(404);
     render('simple', [
         'title' => t('not_found'),

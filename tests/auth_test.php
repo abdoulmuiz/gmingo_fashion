@@ -52,6 +52,23 @@ foreach ($garments as $garment) {
     check($placeholderFields !== [] && (int) $placeholderFields[0]['placeholder'] === 1, $garment['name'] . ' fields are placeholders');
 }
 check(count(db_select('fashion_order_counters')) === 1, 'order counter is seeded');
+$defaults = (string) file_get_contents(dirname(__DIR__) . '/app/domain/defaults.php');
+check(str_contains($defaults, 'confirm with Kano tailors'), 'placeholder garments say confirm with Kano tailors');
+$ownerRow = db_select('fashion_users', ['id' => current_user_id()]);
+check(is_array($ownerRow[0] ?? null) && $ownerRow[0]['password_hash'] !== 'password', 'password is stored as a hash');
+check(password_verify('password', (string) $ownerRow[0]['password_hash']), 'password_hash verifies the owner password');
+
+$authSource = (string) file_get_contents(dirname(__DIR__) . '/app/core/auth.php');
+preg_match_all('/^function\s+(\w+)/m', $authSource, $authFunctions);
+check_eq($authFunctions[1], [
+    'auth_boot',
+    'current_user_id',
+    'current_tenant_id',
+    'require_login',
+    'auth_login',
+    'auth_logout',
+], 'auth.php keeps session access next to the three identity functions');
+check(!str_contains($authSource, 'platform_query_unsafe'), 'auth.php does not look up users');
 
 $before = (int) db()->query('SELECT COUNT(*) FROM fashion_tenants')->fetchColumn();
 $GLOBALS['gmingo_fail_register'] = true;
@@ -98,11 +115,24 @@ check(ini_get('session.use_only_cookies') === '1', 'session id is only accepted 
 unset($beforeSession);
 
 auth_clear_attempts('owner@example.com');
+file_put_contents(auth_rate_path('owner@example.com'), json_encode(array_fill(0, 5, time() - 301)));
+check(login_user('owner@example.com', 'password') === null, 'failures older than 5 minutes do not block login');
+
+auth_clear_attempts('owner@example.com');
 auth_logout();
 for ($i = 0; $i < 5; $i++) {
     check(login_user('owner@example.com', 'wrong-password') === 'login_failed', 'failure ' . $i . ' is counted');
 }
 check(login_user('owner@example.com', 'password') === 'rate_limited', 'the sixth try is rate limited');
+$_POST = [
+    'csrf' => csrf_token(),
+    'email' => 'owner@example.com',
+    'password' => 'password',
+];
+ob_start();
+login_submit();
+$limited = (string) ob_get_clean();
+check(str_contains($limited, t('rate_limited')), 'rate limit shows a friendly error');
 auth_clear_attempts('owner@example.com');
 check(login_user('owner@example.com', 'password') === null, 'login works again after the limit is cleared');
 
@@ -144,9 +174,28 @@ $registerHtml = (string) ob_get_clean();
 check(str_contains($registerHtml, 'name="csrf"'), 'register form includes a CSRF token');
 check(str_contains($registerHtml, 'name="business_name"'), 'register form asks for the shop');
 
+$openWhenSignedOut = ['/login', '/register'];
+foreach ($GLOBALS['gmingo_routes'] as [$method, $pattern, $handler]) {
+    if ($method !== 'GET' || in_array($pattern, $openWhenSignedOut, true)) {
+        continue;
+    }
+    $path = preg_replace('/\{[a-z_]+\}/', uuid(), $pattern);
+    try {
+        ob_start();
+        router_dispatch('GET', (string) $path);
+        ob_end_clean();
+        check(false, 'signed-out ' . $pattern . ' stays closed');
+    } catch (RedirectException $e) {
+        ob_end_clean();
+        check_eq($e->path(), '/login', 'signed-out ' . $pattern . ' redirects to login');
+    }
+}
 try {
-    router_dispatch('GET', '/orders');
-    check(false, 'orders require login');
+    ob_start();
+    router_dispatch('GET', '/missing');
+    ob_end_clean();
+    check(false, 'signed-out unknown page stays closed');
 } catch (RedirectException $e) {
-    check_eq($e->path(), '/login', 'signed-out orders redirect to login');
+    ob_end_clean();
+    check_eq($e->path(), '/login', 'signed-out unknown page redirects to login');
 }
