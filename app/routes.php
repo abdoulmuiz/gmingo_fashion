@@ -7,6 +7,7 @@ require_once __DIR__ . '/fashion/controllers/customers.php';
 require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
 require_once __DIR__ . '/fashion/controllers/stages.php';
+require_once __DIR__ . '/fashion/controllers/payments.php';
 
 route('GET', '/', function (): void {
     require_login();
@@ -61,6 +62,21 @@ route('GET', '/orders/{id}', function (array $params): void {
 route('POST', '/orders/{id}/stage', function (array $params): void {
     require_module('fashion.production');
     stage_move_submit((string) $params['id']);
+});
+
+route('POST', '/orders/{id}/payments', function (array $params): void {
+    require_module('fashion.finance');
+    payment_record_submit((string) $params['id']);
+});
+
+route('POST', '/orders/{id}/payments/{payment}/reverse', function (array $params): void {
+    require_module('fashion.finance');
+    payment_reverse_submit((string) $params['id'], (string) $params['payment']);
+});
+
+route('GET', '/outstanding', function (): void {
+    require_module('fashion.finance');
+    outstanding_show();
 });
 
 route('GET', '/board', function (): void {

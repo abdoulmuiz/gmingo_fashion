@@ -37,6 +37,7 @@ $showNav = !in_array($current, ['/login', '/register'], true);
                 ['/orders', 'orders', 'fashion.orders'],
                 ['/board', 'board', 'fashion.production'],
                 ['/customers', 'customers', 'fashion.orders'],
+                ['/outstanding', 'balances', 'fashion.finance'],
                 ['/more', 'more', null],
             ];
             foreach ($nav as [$path, $label, $module]) {
