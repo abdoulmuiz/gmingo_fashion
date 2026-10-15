@@ -77,12 +77,14 @@ foreach ($iterator as $file) {
     $text = (string) file_get_contents($file->getPathname());
     $base = $file->getBasename();
     if (preg_match('/->(query|exec|prepare)\s*\(/', $text)) {
-        check(in_array($base, ['db.php', 'schema.php', 'auth.php'], true), $base . ' is allowed to prepare SQL');
-    }
-    if ($base === 'auth.php' && preg_match('/->prepare\s*\(/', $text)) {
-        check(str_contains($text, 'WHERE email = :email LIMIT 1'), 'auth prepares only the login email lookup');
+        check(in_array($base, ['db.php', 'schema.php'], true), $base . ' is allowed to prepare SQL');
     }
     if ($base !== 'auth.php') {
         check(!str_contains($text, '$_SESSION'), $base . ' does not read the session');
     }
 }
+
+$auth = (string) file_get_contents(dirname(__DIR__) . '/app/core/auth.php');
+check(str_contains($auth, 'platform_query_unsafe'), 'sign-up and login use the platform query');
+check(str_contains($auth, 'WHERE email = :email LIMIT 1'), 'the platform lookup is the email check');
+check(!preg_match('/->prepare\s*\(/', $auth), 'auth does not prepare SQL itself');

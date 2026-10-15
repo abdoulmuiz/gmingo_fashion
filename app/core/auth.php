@@ -85,11 +85,11 @@ function auth_logout(): void
 
 function auth_find_user_by_email(string $email): ?array
 {
-    $statement = db()->prepare(
-        'SELECT id, tenant_id, name, email, password_hash, lang, active FROM fashion_users WHERE email = :email LIMIT 1'
+    $rows = platform_query_unsafe(
+        'SELECT id, tenant_id, name, email, password_hash, lang, active FROM fashion_users WHERE email = :email LIMIT 1',
+        ['email' => $email]
     );
-    $statement->execute(['email' => $email]);
-    $row = $statement->fetch();
+    $row = $rows[0] ?? null;
     return is_array($row) ? $row : null;
 }
 

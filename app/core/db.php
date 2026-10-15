@@ -314,6 +314,80 @@ function db_query(string $sql, array $params = []): array
     return $statement->fetchAll();
 }
 
+function db_guard_write(string $sql, array $params): void
+{
+    db_tenant();
+    if (str_contains($sql, ';')) {
+        throw new RuntimeException('Semicolons are not allowed.');
+    }
+    if (preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('SQL comments are not allowed.');
+    }
+    if (!preg_match('/^\s*(insert|update|delete)\b/i', $sql)) {
+        throw new RuntimeException('db_execute only runs INSERT, UPDATE, or DELETE.');
+    }
+    if (preg_match('/\b(union|outfile|dumpfile|sleep|benchmark|information_schema)\b/i', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    foreach ($params as $key => $_value) {
+        if (preg_match('/tenant_id/i', (string) $key)) {
+            throw new RuntimeException('Caller cannot supply tenant_id.');
+        }
+    }
+    $bare = db_strip_literals($sql);
+    if (!preg_match('/\btenant_id\s*=\s*:tenant_id\b/i', $bare)) {
+        throw new RuntimeException('Query must filter tenant_id = :tenant_id.');
+    }
+    if (db_has_top_level_or($bare)) {
+        throw new RuntimeException('Top-level OR is not allowed.');
+    }
+    if (preg_match_all('/\b(?:from|join|update|into)\s+`?([a-z0-9_]+)/i', $bare, $matches)) {
+        foreach ($matches[1] as $table) {
+            if (!str_starts_with(strtolower($table), 'fashion_')) {
+                throw new RuntimeException('Only fashion tables can be queried.');
+            }
+        }
+    }
+    if (preg_match('/^\s*(update|delete)\b/i', $bare)
+        && preg_match('/^\s*(?:update|delete\s+from)\s+`?([a-z0-9_]+)/i', $bare, $tableMatch)
+        && db_append_only(strtolower($tableMatch[1]))) {
+        throw new RuntimeException('This table is append-only.');
+    }
+}
+
+function db_execute(string $sql, array $params = []): int
+{
+    db_guard_write($sql, $params);
+    [$sql, $tenantParams] = db_apply_tenant($sql);
+    $statement = db()->prepare($sql);
+    db_bind($statement, $tenantParams + $params);
+    $statement->execute();
+    return $statement->rowCount();
+}
+
+function platform_query_unsafe(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+    $callFile = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $lookupFunction = (string) ($trace[1]['function'] ?? '');
+    $lookupFile = str_replace('\\', '/', (string) ($trace[1]['file'] ?? ''));
+    $ownerFunction = (string) ($trace[2]['function'] ?? '');
+    $fromSignupOrLogin = str_ends_with($callFile, '/app/core/auth.php')
+        && $lookupFunction === 'auth_find_user_by_email'
+        && str_ends_with($lookupFile, '/app/domain/accounts.php')
+        && in_array($ownerFunction, ['business_register', 'login_user'], true);
+    if (!$fromSignupOrLogin) {
+        throw new RuntimeException('This query is only for sign-up and login.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
 function db_order(string $order): string
 {
     $parts = preg_split('/\s*,\s*/', trim($order)) ?: [];
