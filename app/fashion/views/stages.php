@@ -39,4 +39,20 @@
         </label>
         <button class="btn" type="submit"><?= e(t('add_stage')) ?></button>
     </form>
+    <h2><?= e(t('stage_roles')) ?></h2>
+    <p class="meta"><?= e(t('stage_roles_help')) ?></p>
+    <form method="post" action="<?= e(url('/settings/stages')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="roles">
+        <?php foreach ($stages as $stage): ?>
+            <label><?= e((string) $stage['name']) ?><?php if ((int) $stage['active'] !== 1): ?> (<?= e(t('stage_inactive')) ?>)<?php endif; ?>
+                <select name="roles[<?= e((string) $stage['id']) ?>]" aria-label="<?= e(t('stage_role')) ?>">
+                    <?php foreach (['open', 'ready', 'finished'] as $role): ?>
+                        <option value="<?= e($role) ?>" <?= (string) $stage['role'] === $role ? 'selected' : '' ?>><?= e(t('role_' . $role)) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        <?php endforeach; ?>
+        <button class="btn" type="submit"><?= e(t('save')) ?></button>
+    </form>
 </section>

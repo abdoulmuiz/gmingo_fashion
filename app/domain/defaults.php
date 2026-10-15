@@ -22,12 +22,20 @@ function shop_seed_defaults(string $companyType): void
             ['delivered', 'Delivered'],
         ];
     }
+    $last = count($stages) - 1;
     foreach ($stages as $index => $stage) {
+        $role = 'open';
+        if ($index === $last) {
+            $role = 'finished';
+        } elseif ($last > 0 && $index === $last - 1) {
+            $role = 'ready';
+        }
         db_insert('fashion_stage_definitions', [
             'code' => $stage[0],
             'name' => $stage[1],
             'sort_order' => $index + 1,
             'active' => 1,
+            'role' => $role,
         ]);
     }
 

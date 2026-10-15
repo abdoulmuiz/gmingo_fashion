@@ -176,15 +176,24 @@ function order_find(string $id): ?array
     return $order;
 }
 
+function order_stage_sql(string $column): string
+{
+    if (!in_array($column, ['code', 'name', 'role'], true)) {
+        throw new RuntimeException('Invalid stage column.');
+    }
+    return '(SELECT sd.' . $column . ' FROM fashion_stage_events se INNER JOIN fashion_stage_definitions sd ON sd.id = se.stage_id AND sd.tenant_id = :tenant_id WHERE se.tenant_id = :tenant_id AND se.order_id = o.id ORDER BY se.seq DESC LIMIT 1)';
+}
+
 function order_rows(string $filter, string $search, ?string $id): array
 {
-    $stageCode = '(SELECT sd.code FROM fashion_stage_events se INNER JOIN fashion_stage_definitions sd ON sd.id = se.stage_id AND sd.tenant_id = :tenant_id WHERE se.tenant_id = :tenant_id AND se.order_id = o.id ORDER BY se.seq DESC LIMIT 1)';
-    $stageName = '(SELECT sd.name FROM fashion_stage_events se INNER JOIN fashion_stage_definitions sd ON sd.id = se.stage_id AND sd.tenant_id = :tenant_id WHERE se.tenant_id = :tenant_id AND se.order_id = o.id ORDER BY se.seq DESC LIMIT 1)';
+    $stageCode = order_stage_sql('code');
+    $stageName = order_stage_sql('name');
+    $stageRole = order_stage_sql('role');
     $totalSql = '(SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i WHERE i.order_id = o.id AND i.tenant_id = :tenant_id)';
     $paidSql = '(SELECT COALESCE(SUM(p.amount_kobo), 0) FROM fashion_payments p WHERE p.order_id = o.id AND p.tenant_id = :tenant_id)';
     $sql = 'SELECT o.id, o.order_number, o.customer_id, o.due_date, o.urgent, o.created_at,
             c.name AS customer_name, ' . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo, '
-            . $stageCode . ' AS stage_code, ' . $stageName . ' AS stage_name
+            . $stageCode . ' AS stage_code, ' . $stageName . ' AS stage_name, ' . $stageRole . ' AS stage_role
          FROM fashion_orders o
          INNER JOIN fashion_customers c ON c.id = o.customer_id AND c.tenant_id = :tenant_id
          WHERE o.tenant_id = :tenant_id';
@@ -193,7 +202,7 @@ function order_rows(string $filter, string $search, ?string $id): array
         $sql .= ' AND o.id = :order_id';
         $params['order_id'] = $id;
     } else {
-        $sql .= order_filter_sql($filter, $stageCode, $totalSql, $paidSql);
+        $sql .= order_filter_sql($filter, $stageRole, $totalSql, $paidSql);
         if ($filter === 'overdue' || $filter === 'due_today') {
             $params['today'] = date('Y-m-d');
         }
@@ -213,13 +222,13 @@ function order_rows(string $filter, string $search, ?string $id): array
     return $rows;
 }
 
-function order_filter_sql(string $filter, string $stageCode, string $totalSql, string $paidSql): string
+function order_filter_sql(string $filter, string $stageRole, string $totalSql, string $paidSql): string
 {
     if ($filter === 'active') {
-        return ' AND (' . $stageCode . ' IS NULL OR ' . $stageCode . ' NOT IN (\'ready\', \'delivered\', \'completed\'))';
+        return ' AND (' . $stageRole . ' IS NULL OR ' . $stageRole . ' NOT IN (\'ready\', \'finished\'))';
     }
     if ($filter === 'overdue') {
-        return ' AND o.due_date < :today AND (' . $stageCode . ' IS NULL OR ' . $stageCode . ' NOT IN (\'delivered\', \'completed\'))';
+        return ' AND o.due_date < :today AND (' . $stageRole . ' IS NULL OR ' . $stageRole . ' <> \'finished\')';
     }
     if ($filter === 'due_today') {
         return ' AND o.due_date = :today';
@@ -228,10 +237,10 @@ function order_filter_sql(string $filter, string $stageCode, string $totalSql, s
         return ' AND o.urgent = 1';
     }
     if ($filter === 'ready') {
-        return ' AND ' . $stageCode . ' = \'ready\'';
+        return ' AND ' . $stageRole . ' = \'ready\'';
     }
     if ($filter === 'delivered') {
-        return ' AND ' . $stageCode . ' IN (\'delivered\', \'completed\')';
+        return ' AND ' . $stageRole . ' = \'finished\'';
     }
     if ($filter === 'unpaid') {
         return ' AND ' . $totalSql . ' > ' . $paidSql;
@@ -245,6 +254,7 @@ function order_present(array $row): array
     $paid = (int) $row['paid_kobo'];
     $code = $row['stage_code'];
     $name = $row['stage_name'];
+    $role = $row['stage_role'];
     return [
         'id' => (string) $row['id'],
         'order_number' => (string) $row['order_number'],
@@ -259,6 +269,7 @@ function order_present(array $row): array
         'paid' => $paid >= $total,
         'stage_code' => is_string($code) && $code !== '' ? $code : null,
         'stage_name' => is_string($name) && $name !== '' ? $name : null,
+        'stage_role' => is_string($role) && in_array($role, ['open', 'ready', 'finished'], true) ? $role : null,
     ];
 }
 

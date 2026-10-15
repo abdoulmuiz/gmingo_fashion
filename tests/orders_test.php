@@ -134,6 +134,7 @@ check_eq($profile['total_kobo'], 3500000, 'the total is quantity times price for
 check_eq($profile['balance_kobo'], 2500000, 'the balance is the total minus payments');
 check($profile['paid'] === false, 'a partly paid order is unpaid');
 check_eq($profile['stage_code'], 'sewing', 'the current stage is the latest stage event');
+check_eq($profile['stage_role'], 'open', 'sewing stays an open stage role');
 check_eq(count($profile['items']), 2, 'an order keeps several items');
 
 $other = business_register([
@@ -180,6 +181,7 @@ $completedStage = db_insert('fashion_stage_definitions', [
     'name' => 'Completed',
     'sort_order' => 20,
     'active' => 1,
+    'role' => 'open',
 ]);
 $completed = orders_test_make($amina['id'], $kaftan['id'], $nextWeek, false);
 orders_test_stage($completed['id'], 'completed');
@@ -212,7 +214,7 @@ check(in_array($numbers['musa'], $active, true), 'active includes an order with 
 check(!in_array($numbers['ready'], $active, true), 'active leaves out a ready order');
 check(!in_array($numbers['ready_late'], $active, true), 'active leaves out a ready order that is late');
 check(!in_array($numbers['delivered'], $active, true), 'active leaves out a delivered order');
-check(!in_array($numbers['completed'], $active, true), 'active leaves out a completed order');
+check(in_array($numbers['completed'], $active, true), 'an extra final stage stays active while its role is open');
 
 $overdueRows = orders_test_numbers('overdue');
 check(in_array($numbers['overdue'], $overdueRows, true), 'overdue includes an unfinished order past its due date');
@@ -227,7 +229,7 @@ check(in_array($numbers['ready'], $readyRows, true) && in_array($numbers['ready_
 check(!in_array($numbers['delivered'], $readyRows, true), 'ready leaves out a delivered order');
 $deliveredRows = orders_test_numbers('delivered');
 check(in_array($numbers['delivered'], $deliveredRows, true), 'delivered lists a delivered order');
-check(in_array($numbers['completed'], $deliveredRows, true), 'delivered lists a completed order');
+check(!in_array($numbers['completed'], $deliveredRows, true), 'delivered follows the finished role');
 check(!in_array($numbers['ready'], $deliveredRows, true), 'delivered leaves out a ready order');
 
 $unpaid = orders_test_numbers('unpaid');

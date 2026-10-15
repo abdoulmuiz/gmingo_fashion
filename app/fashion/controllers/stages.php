@@ -58,6 +58,9 @@ function stages_submit(): void
         stage_set_active($id, false);
     } elseif ($action === 'activate') {
         stage_set_active($id, true);
+    } elseif ($action === 'roles') {
+        $posted = $_POST['roles'] ?? [];
+        $result = stage_save_roles(is_array($posted) ? $posted : []);
     }
     if (isset($result['error'])) {
         flash_set('error', t((string) $result['error']));

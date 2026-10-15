@@ -92,11 +92,11 @@ function dashboard_order_counts(): array
     $ready = 0;
     $attention = [];
     foreach (order_list('all', '') as $order) {
-        $code = $order['stage_code'];
-        $finished = in_array($code, ['delivered', 'completed'], true);
+        $role = $order['stage_role'];
+        $finished = $role === 'finished';
         $due = (string) $order['due_date'];
         $isOverdue = $due < $today && !$finished;
-        $isReady = $code === 'ready';
+        $isReady = $role === 'ready';
         if (!$isReady && !$finished) {
             $active++;
         }

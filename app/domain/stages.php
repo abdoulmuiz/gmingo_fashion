@@ -24,7 +24,7 @@ function stage_active(): array
 function stage_latest(string $orderId): ?array
 {
     $rows = db_query(
-        'SELECT sd.id, sd.code, sd.name, sd.sort_order, sd.active
+        'SELECT sd.id, sd.code, sd.name, sd.role, sd.sort_order, sd.active
          FROM fashion_stage_events se
          INNER JOIN fashion_stage_definitions sd ON sd.id = se.stage_id AND sd.tenant_id = :tenant_id
          WHERE se.tenant_id = :tenant_id AND se.order_id = :order_id
@@ -201,7 +201,66 @@ function stage_add(string $name): array
         'name' => $name,
         'sort_order' => $sort,
         'active' => 1,
+        'role' => 'open',
     ]);
+    return [];
+}
+
+function stage_role_names(): array
+{
+    return ['open', 'ready', 'finished'];
+}
+
+function stage_role_problem(array $roles): ?string
+{
+    $ready = 0;
+    $finished = 0;
+    foreach ($roles as $role) {
+        if ($role === 'ready') {
+            $ready++;
+        } elseif ($role === 'finished') {
+            $finished++;
+        }
+    }
+    if ($finished !== 1) {
+        return 'stage_need_finished';
+    }
+    if ($ready > 1) {
+        return 'stage_one_ready';
+    }
+    return null;
+}
+
+function stage_save_roles(array $posted): array
+{
+    require_module('fashion.production');
+    $stages = stage_definitions();
+    $planned = [];
+    foreach ($stages as $stage) {
+        $id = (string) $stage['id'];
+        $role = (string) $stage['role'];
+        if (array_key_exists($id, $posted)) {
+            $role = (string) $posted[$id];
+        }
+        if (!in_array($role, stage_role_names(), true)) {
+            return ['error' => 'required'];
+        }
+        $planned[$id] = $role;
+    }
+    $problem = stage_role_problem(array_values($planned));
+    if ($problem !== null) {
+        return ['error' => $problem];
+    }
+    db_begin();
+    try {
+        foreach ($planned as $id => $role) {
+            db_update('fashion_stage_definitions', ['role' => $role], ['id' => $id]);
+        }
+        db_commit();
+    } catch (Throwable $e) {
+        db_rollback();
+        throw $e;
+    }
     return [];
 }
 
