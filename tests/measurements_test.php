@@ -62,11 +62,13 @@ check(isset(measurement_save($customer['id'], $kaftan['id'], 'inches', ['neck' =
 check_eq(count(db_select('fashion_measurements', ['customer_id' => $customer['id']])), 2, 'a rejected measurement is not stored');
 check_throws(
     static fn () => db_update('fashion_measurements', ['unit' => 'cm'], ['id' => $first['id']]),
-    'measurements cannot be updated'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     static fn () => db_delete('fashion_measurements', ['id' => $first['id']]),
-    'measurements cannot be deleted'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 
 $profile = measurement_profile($customer['id'], $kaftan['id']);

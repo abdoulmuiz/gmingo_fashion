@@ -132,7 +132,12 @@ $_POST = [
     'gender' => 'female',
     'customer_type' => 'regular',
 ];
-check_throws(static fn () => customers_save(), 'saving a customer requires the CSRF token');
+$_COOKIE['lang'] = 'en';
+check_throws(
+    static fn () => customers_save(),
+    HttpException::class,
+    'The form expired. Go back and try again.'
+);
 
 auth_login((string) $shop['user_id'], (string) $shop['tenant_id']);
 module_save([
@@ -174,4 +179,9 @@ try {
 } catch (HttpException $e) {
     check($e->status() === 403, 'creating a customer returns 403 when orders is off');
 }
-check_throws(static fn () => customers_index(), 'the customer list returns 403 when orders is off');
+$_COOKIE['lang'] = 'en';
+check_throws(
+    static fn () => customers_index(),
+    HttpException::class,
+    'This part of the app is switched off.'
+);

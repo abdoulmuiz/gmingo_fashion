@@ -92,11 +92,13 @@ check_eq($again['error'] ?? '', 'already_reversed', 'a payment is reversed once'
 check_eq(count(db_select('fashion_payments', ['order_id' => $order['id']])), 3, 'a second reversal is not stored');
 check_throws(
     static fn () => db_update('fashion_payments', ['amount_kobo' => 1], ['id' => $cash['id']]),
-    'payments cannot be updated'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     static fn () => db_delete('fashion_payments', ['id' => $cash['id']]),
-    'payments cannot be deleted'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 $paymentSource = (string) file_get_contents(dirname(__DIR__) . '/app/domain/payments.php')
     . (string) file_get_contents(dirname(__DIR__) . '/app/fashion/controllers/payments.php');

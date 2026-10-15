@@ -128,7 +128,8 @@ $log = db_select('fashion_activity_log', ['module_key' => 'fashion.orders']);
 check(count($log) === 1 && (int) $log[0]['enabled'] === 0, 'the switch is written to the activity log');
 check_throws(
     fn () => db_update('fashion_activity_log', ['enabled' => 1], ['id' => $log[0]['id']]),
-    'activity log is append-only'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 
 auth_login((string) $brand['user_id'], (string) $brand['tenant_id']);

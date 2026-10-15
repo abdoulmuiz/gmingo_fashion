@@ -71,48 +71,58 @@ check_eq(
 
 check_throws(
     fn () => db_query('SELECT id FROM fashion_customers', []),
-    'no tenant filter throws'
+    RuntimeException::class,
+    'Query must filter tenant_id = :tenant_id.'
 );
 check_throws(
     fn () => db_query(
         'SELECT id FROM fashion_customers WHERE tenant_id = :tenant_id OR id = :id',
         ['id' => $customerA]
     ),
-    'an OR bypass throws'
+    RuntimeException::class,
+    'Top-level OR is not allowed.'
 );
 check_throws(
     fn () => db_query('SELECT id FROM fashion_customers WHERE 1 = 1 /* tenant_id = :tenant_id */', []),
-    'a comment-hidden tenant filter throws'
+    RuntimeException::class,
+    'SQL comments are not allowed.'
 );
 check_throws(
     fn () => db_query('SELECT id FROM fashion_customers WHERE tenant_id = :tenant_id', ['tenant_id' => $tenantA]),
-    'passing tenant_id throws'
+    RuntimeException::class,
+    'Caller cannot supply tenant_id.'
 );
 check_throws(
     fn () => db_execute('DELETE FROM fashion_customers WHERE id = :id', ['id' => $customerA]),
-    'execute without a tenant filter throws'
+    RuntimeException::class,
+    'Query must filter tenant_id = :tenant_id.'
 );
 check_throws(
     fn () => platform_query_unsafe('SELECT id FROM fashion_users WHERE email = :email', ['email' => 'a@b.co']),
-    'the platform query is only for sign-up and login'
+    RuntimeException::class,
+    'This query is only for sign-up and login.'
 );
 
 auth_logout();
 check_throws(
     fn () => db_select('fashion_customers'),
-    'no session throws'
+    RuntimeException::class,
+    'Missing session.'
 );
 check_throws(
     fn () => db_query('SELECT id FROM fashion_customers WHERE tenant_id = :tenant_id', []),
-    'no session throws for a filtered query'
+    RuntimeException::class,
+    'Missing session.'
 );
 check_throws(
     fn () => db_update('fashion_customers', ['name' => 'Hacked'], ['id' => $customerA]),
-    'no session throws for update'
+    RuntimeException::class,
+    'Missing session.'
 );
 check_throws(
     fn () => db_delete('fashion_customers', ['id' => $customerA]),
-    'no session throws for delete'
+    RuntimeException::class,
+    'Missing session.'
 );
 
 auth_login($userA, $tenantA);

@@ -19,12 +19,15 @@ foreach ($english as $key => $value) {
 
 check_eq(url('/orders'), base_path() . '/orders', 'url() prefixes the base path');
 check_eq(url('/'), base_path() . '/', 'home url uses the base path');
-check_throws(fn () => url('http://example.com/orders'), 'full domains are rejected');
-check_throws(fn () => url("//example.com"), 'protocol-relative links are rejected');
+check_throws(fn () => url('http://example.com/orders'), RuntimeException::class,
+    'Links must use the base path, not a full domain.');
+check_throws(fn () => url("//example.com"), RuntimeException::class,
+    'Links must use the base path, not a full domain.');
 
 $_SERVER['REQUEST_URI'] = base_path() . '/orders?q=1';
 check_eq(request_path(), '/orders', 'request path strips the base path and query');
 
+$_COOKIE['lang'] = 'en';
 business_register([
     'business_name' => 'Shell Shop',
     'owner_name' => 'Amina Bello',
@@ -39,10 +42,11 @@ $html = (string) ob_get_clean();
 check(str_contains($html, t('no_orders')), 'orders route renders the list');
 check(str_contains($html, t('all')), 'orders list has filter tabs');
 check(str_contains($html, 'bottom-nav'), 'layout includes bottom navigation');
-check(str_contains($html, t('home')) || str_contains($html, 'Home') || str_contains($html, 'Gida'), 'nav has Home');
-check(str_contains($html, 'Board') || str_contains($html, 'Allo'), 'nav has Board');
-check(str_contains($html, 'Customers') || str_contains($html, 'Abokan ciniki'), 'nav has Customers');
-check(str_contains($html, 'More') || str_contains($html, 'Kara'), 'nav has More');
+check(current_lang() === 'en', 'navigation is rendered in English');
+check(str_contains($html, t('home')), 'nav has the English Home label');
+check(str_contains($html, t('board')), 'nav has the English Board label');
+check(str_contains($html, t('customers')), 'nav has the English Customers label');
+check(str_contains($html, t('more')), 'nav has the English More label');
 
 ob_start();
 router_dispatch('GET', '/missing');

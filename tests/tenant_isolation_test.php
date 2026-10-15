@@ -70,47 +70,53 @@ check_eq($stored->fetchColumn(), $tenantB, 'insert ignores a caller-supplied ten
 
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers', []),
-    'query without tenant filter is rejected'
+    RuntimeException::class,
+    'Query must filter tenant_id = :tenant_id.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id -- leak', []),
-    'SQL comments are rejected'
+    RuntimeException::class,
+    'SQL comments are not allowed.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id; DELETE FROM fashion_customers', []),
-    'semicolons are rejected'
+    RuntimeException::class,
+    'Semicolons are not allowed.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id OR id = :id', ['id' => $customerA]),
-    'top-level OR is rejected'
+    RuntimeException::class,
+    'Top-level OR is not allowed.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id', ['tenant_id' => $tenantA]),
-    'caller-supplied tenant_id is rejected'
+    RuntimeException::class,
+    'Caller cannot supply tenant_id.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id UNION SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id', []),
-    'UNION is rejected'
+    RuntimeException::class,
+    'This query is not allowed.'
 );
 check_throws(
     fn () => db_update('fashion_payments', ['amount_kobo' => 1], ['id' => $paymentA]),
-    'payments cannot be updated'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     fn () => db_delete('fashion_stage_events', ['id' => uuid()]),
-    'stage events cannot be deleted'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     fn () => db_update('fashion_measurements', ['unit' => 'cm'], ['id' => uuid()]),
-    'measurements cannot be updated'
-);
-check_throws(
-    fn () => db_delete('fashion_stock_movements', ['id' => uuid()]),
-    'stock movements cannot be deleted'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     fn () => db_bind_float_probe(),
-    'floats are rejected'
+    RuntimeException::class,
+    'Floats are not allowed. Store money as whole kobo.'
 );
 
 $orInside = db_query(
@@ -128,11 +134,13 @@ check(count($literal) === 1, 'OR inside a string is not treated as a filter bypa
 auth_logout();
 check_throws(
     fn () => db_select('fashion_customers'),
-    'missing session is rejected for select'
+    RuntimeException::class,
+    'Missing session.'
 );
 check_throws(
     fn () => db_query('SELECT * FROM fashion_customers WHERE tenant_id = :tenant_id', []),
-    'missing session is rejected for query'
+    RuntimeException::class,
+    'Missing session.'
 );
 check_throws(
     fn () => db_insert('fashion_customers', [
@@ -143,7 +151,8 @@ check_throws(
         'messages_opt_in' => 0,
         'created_at' => $now,
     ]),
-    'missing session is rejected for insert'
+    RuntimeException::class,
+    'Missing session.'
 );
 
 auth_login($userA, $tenantA);

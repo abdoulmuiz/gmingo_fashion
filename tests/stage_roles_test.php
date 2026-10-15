@@ -11,6 +11,7 @@ require_once dirname(__DIR__) . '/app/domain/stages.php';
 require_once dirname(__DIR__) . '/app/fashion/controllers/stages.php';
 
 tests_reset();
+date_default_timezone_set('Africa/Lagos');
 
 function stage_roles_test_backfill(): void
 {
@@ -154,9 +155,11 @@ $customer = customer_create([
     'customer_type' => 'regular',
 ]);
 $garment = db_select('fashion_garment_types', ['code' => 'kaftan'])[0];
-$today = date('Y-m-d');
-$yesterday = date('Y-m-d', strtotime('-1 day'));
-$nextWeek = date('Y-m-d', strtotime('+7 days'));
+$lagos = new DateTimeZone('Africa/Lagos');
+$todayDate = new DateTimeImmutable(app_today(), $lagos);
+$today = $todayDate->format('Y-m-d');
+$yesterday = $todayDate->modify('-1 day')->format('Y-m-d');
+$nextWeek = $todayDate->modify('+7 days')->format('Y-m-d');
 [$weekStart, $weekEnd] = dashboard_week($today);
 
 $openFuture = stage_roles_test_make($customer['id'], $garment['id'], $nextWeek, false);

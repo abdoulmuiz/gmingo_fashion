@@ -22,12 +22,16 @@ function check_eq(mixed $actual, mixed $expected, string $message): void
     check($actual === $expected, $message . ' (got ' . var_export($actual, true) . ')');
 }
 
-function check_throws(callable $fn, string $message): void
+function check_throws(callable $fn, string $class, string $expected): void
 {
     try {
         $fn();
-        check(false, $message);
+        check(false, 'expected ' . $class . ': ' . $expected);
     } catch (Throwable $e) {
-        check(true, $message);
+        $actual = $e::class . ': ' . $e->getMessage();
+        check(
+            $e::class === $class && $e->getMessage() === $expected,
+            'expected ' . $class . ': ' . $expected . ' (got ' . $actual . ')'
+        );
     }
 }

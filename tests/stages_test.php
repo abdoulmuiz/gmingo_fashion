@@ -83,11 +83,13 @@ check_eq($third['code'], 'finishing', 'an inactive stage is skipped');
 check_eq(stages_test_codes($order['id']), ['cutting', 'sewing', 'finishing'], 'stage history stays in order');
 check_throws(
     static fn () => db_update('fashion_stage_events', ['note' => 'changed'], ['id' => $events[0]['id']]),
-    'stage events cannot be updated'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 check_throws(
     static fn () => db_delete('fashion_stage_events', ['id' => $events[0]['id']]),
-    'stage events cannot be deleted'
+    RuntimeException::class,
+    'This table is append-only.'
 );
 
 $ourStageIds = array_column(db_select('fashion_stage_definitions', [], ['limit' => 20]), 'id');

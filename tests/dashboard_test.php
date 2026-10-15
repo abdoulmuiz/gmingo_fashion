@@ -10,6 +10,14 @@ require_once dirname(__DIR__) . '/app/domain/dashboard.php';
 require_once dirname(__DIR__) . '/app/fashion/controllers/home.php';
 
 tests_reset();
+date_default_timezone_set('Africa/Lagos');
+
+function dashboard_test_numbers(string $filter): array
+{
+    $numbers = array_column(order_list($filter, ''), 'order_number');
+    sort($numbers);
+    return $numbers;
+}
 
 function dashboard_test_value(array $dash, string $key): ?string
 {
@@ -78,11 +86,13 @@ $customer = customer_create([
     'customer_type' => 'regular',
 ]);
 $garment = db_select('fashion_garment_types', ['code' => 'kaftan'])[0];
-$today = date('Y-m-d');
-$yesterday = date('Y-m-d', strtotime($today . ' -1 day'));
+$lagos = new DateTimeZone('Africa/Lagos');
+$todayDate = new DateTimeImmutable(app_today(), $lagos);
+$today = $todayDate->format('Y-m-d');
+$yesterday = $todayDate->modify('-1 day')->format('Y-m-d');
 [$weekStart, $weekEnd] = dashboard_week($today);
-$beforeWeek = date('Y-m-d', strtotime($weekStart . ' -1 day'));
-$afterWeek = date('Y-m-d', strtotime($weekEnd . ' +1 day'));
+$beforeWeek = (new DateTimeImmutable($weekStart, $lagos))->modify('-1 day')->format('Y-m-d');
+$afterWeek = (new DateTimeImmutable($weekEnd, $lagos))->modify('+1 day')->format('Y-m-d');
 
 $openToday = dashboard_test_order($customer['id'], $garment['id'], $today, false, '1000');
 $overdueRecent = dashboard_test_order($customer['id'], $garment['id'], $yesterday, false, '1000');
@@ -235,3 +245,59 @@ $factoryHtml = (string) ob_get_clean();
 check(!str_contains($factoryHtml, t('card_low_stock')), 'a factory home screen has no low stock card');
 check(!str_contains($factoryHtml, t('inventory_later')), 'a factory home screen does not show the inventory later note');
 check(str_contains($factoryHome['greeting'], 'Good afternoon, Bala'), 'the factory greeting follows the afternoon');
+$GLOBALS['gmingo_now'] = '2026-10-12 00:30:00';
+date_default_timezone_set('UTC');
+try {
+    $lagosZone = new DateTimeZone('Africa/Lagos');
+    $moment = new DateTimeImmutable($GLOBALS['gmingo_now'], $lagosZone);
+    check_eq($moment->format('Y-m-d'), '2026-10-12', '00:30 Lagos is 12 October');
+    check_eq(
+        $moment->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d'),
+        '2026-10-11',
+        '00:30 Lagos is still the previous UTC day'
+    );
+    check_eq(app_today(), '2026-10-12', 'the business day is the Lagos date');
+    check_eq(dashboard_week(app_today()), ['2026-10-12', '2026-10-18'], 'due this week is Monday to Sunday in Lagos');
+
+    $midnightShop = business_register([
+        'business_name' => 'Midnight Shop',
+        'owner_name' => 'Amina Bello',
+        'email' => 'lagos-midnight@example.com',
+        'password' => 'password',
+        'phone' => '08038880001',
+        'company_type' => 'tailor',
+    ]);
+    check(isset($midnightShop['tenant_id']), 'the Lagos midnight case starts from its own shop');
+    $midnightCustomer = customer_create([
+        'name' => 'Midnight Customer',
+        'phone' => '08038880002',
+        'gender' => 'female',
+        'customer_type' => 'regular',
+    ]);
+    $midnightGarment = db_select('fashion_garment_types', ['code' => 'kaftan'])[0];
+    $openLate = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-11', false, '1000');
+    $readyLate = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-11', false, '1000');
+    $finishedLate = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-11', false, '1000');
+    $dueToday = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-12', false, '1000');
+    $dueWednesday = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-15', false, '1000');
+    $dueSunday = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-18', false, '1000');
+    $dueNextWeek = dashboard_test_order($midnightCustomer['id'], $midnightGarment['id'], '2026-10-19', false, '1000');
+    dashboard_test_stage($readyLate['id'], 'ready');
+    dashboard_test_stage($finishedLate['id'], 'delivered');
+
+    $midnight = dashboard_home(0);
+    check_eq(dashboard_test_value($midnight, 'card_overdue'), '2', 'overdue counts unfinished orders before the Lagos date');
+    check_eq(dashboard_test_value($midnight, 'card_week'), '3', 'due this week counts unfinished orders from Monday to Sunday Lagos');
+    $overdueNumbers = dashboard_test_numbers('overdue');
+    $expectedOverdue = [$openLate['order_number'], $readyLate['order_number']];
+    sort($expectedOverdue);
+    check_eq($overdueNumbers, $expectedOverdue, 'overdue lists unfinished orders before the Lagos date');
+    check(!in_array($finishedLate['order_number'], $overdueNumbers, true), 'a finished order is not overdue');
+    check_eq(dashboard_test_numbers('due_today'), [$dueToday['order_number']], 'due today is the Lagos date');
+    check(!in_array($dueWednesday['order_number'], $overdueNumbers, true), 'an order later this week is not overdue');
+    check(!in_array($dueSunday['order_number'], $overdueNumbers, true), 'an order due Sunday is not overdue');
+    check(!in_array($dueNextWeek['order_number'], dashboard_test_numbers('due_today'), true), 'next Monday is not due today');
+} finally {
+    unset($GLOBALS['gmingo_now']);
+    date_default_timezone_set('Africa/Lagos');
+}

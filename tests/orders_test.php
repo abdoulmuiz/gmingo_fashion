@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/app/domain/orders.php';
 require_once dirname(__DIR__) . '/app/fashion/controllers/orders.php';
 
 tests_reset();
+date_default_timezone_set('Africa/Lagos');
 
 function orders_test_stage(string $orderId, string $code): void
 {
@@ -82,9 +83,11 @@ $musa = customer_create([
 ]);
 $kaftan = db_select('fashion_garment_types', ['code' => 'kaftan'])[0];
 $shirt = db_select('fashion_garment_types', ['code' => 'shirt'])[0];
-$today = date('Y-m-d');
-$yesterday = date('Y-m-d', strtotime('-1 day'));
-$nextWeek = date('Y-m-d', strtotime('+7 days'));
+$lagos = new DateTimeZone('Africa/Lagos');
+$todayDate = new DateTimeImmutable(app_today(), $lagos);
+$today = $todayDate->format('Y-m-d');
+$yesterday = $todayDate->modify('-1 day')->format('Y-m-d');
+$nextWeek = $todayDate->modify('+7 days')->format('Y-m-d');
 
 $rejected = order_create([
     'customer_id' => '',
@@ -186,7 +189,10 @@ $completedStage = db_insert('fashion_stage_definitions', [
 $completed = orders_test_make($amina['id'], $kaftan['id'], $nextWeek, false);
 orders_test_stage($completed['id'], 'completed');
 orders_test_pay($completed['id'], 100000);
-check($completedStage !== '', 'a completed stage can be saved');
+$savedStage = db_select('fashion_stage_definitions', ['id' => $completedStage]);
+check(count($savedStage) === 1, 'the completed stage is stored for this business');
+check_eq((string) ($savedStage[0]['code'] ?? ''), 'completed', 'the new stage code is completed');
+check_eq((string) ($savedStage[0]['tenant_id'] ?? ''), (string) $shop['tenant_id'], 'the new stage belongs to this business');
 
 $numbers = [
     'active' => $first['order_number'],
