@@ -9,3 +9,4 @@ require __DIR__ . '/core/i18n.php';
 require __DIR__ . '/core/csrf.php';
 require __DIR__ . '/core/auth.php';
 require __DIR__ . '/core/router.php';
+require __DIR__ . '/core/db.php';
