@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/fashion/controllers/auth_pages.php';
+require_once __DIR__ . '/fashion/controllers/home.php';
 require_once __DIR__ . '/fashion/controllers/customers.php';
 require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
@@ -13,7 +14,7 @@ require_once __DIR__ . '/fashion/controllers/measurements.php';
 route('GET', '/', function (): void {
     require_login();
     http_response_code(200);
-    render('home', ['title' => t('home')]);
+    home_show();
 });
 
 route('GET', '/login', function (): void {
