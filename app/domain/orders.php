@@ -134,13 +134,62 @@ function order_allocate_number(): string
     return $prefix . (string) $next;
 }
 
-function order_list(string $filter, string $search): array
+function list_page_size(): int
+{
+    return 25;
+}
+
+function list_page(mixed $page): int
+{
+    if (is_int($page)) {
+        return $page > 0 ? $page : 1;
+    }
+    if (is_string($page) && preg_match('/^[1-9][0-9]{0,6}$/', $page) === 1) {
+        return (int) $page;
+    }
+    return 1;
+}
+
+function order_list(string $filter, string $search, int $page = 1): array
 {
     require_module('fashion.orders');
     if (!in_array($filter, order_tabs(), true)) {
         $filter = 'all';
     }
-    return order_rows($filter, trim($search), null);
+    return order_rows($filter, trim($search), null, list_page($page));
+}
+
+function order_count(string $filter, string $search): int
+{
+    require_module('fashion.orders');
+    if (!in_array($filter, order_tabs(), true)) {
+        $filter = 'all';
+    }
+    [$where, $params] = order_conditions($filter, trim($search));
+    $rows = db_query(
+        'SELECT COUNT(*) AS total
+         FROM fashion_orders o
+         INNER JOIN fashion_customers c ON c.id = o.customer_id AND c.tenant_id = :tenant_id
+         WHERE o.tenant_id = :tenant_id' . $where,
+        $params
+    );
+    return (int) ($rows[0]['total'] ?? 0);
+}
+
+function order_page_path(string $filter, string $search, int $page): string
+{
+    if (!in_array($filter, order_tabs(), true)) {
+        $filter = 'all';
+    }
+    $path = '/orders?tab=' . rawurlencode($filter);
+    $search = trim($search);
+    if ($search !== '') {
+        $path .= '&q=' . rawurlencode($search);
+    }
+    if ($page > 1) {
+        $path .= '&page=' . (string) $page;
+    }
+    return $path;
 }
 
 function order_find(string $id): ?array
@@ -184,13 +233,38 @@ function order_stage_sql(string $column): string
     return '(SELECT sd.' . $column . ' FROM fashion_stage_events se INNER JOIN fashion_stage_definitions sd ON sd.id = se.stage_id AND sd.tenant_id = :tenant_id WHERE se.tenant_id = :tenant_id AND se.order_id = o.id ORDER BY se.seq DESC LIMIT 1)';
 }
 
-function order_rows(string $filter, string $search, ?string $id): array
+function order_money_sql(): array
+{
+    $totalSql = '(SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i WHERE i.order_id = o.id AND i.tenant_id = :tenant_id)';
+    $paidSql = '(SELECT COALESCE(SUM(p.amount_kobo), 0) FROM fashion_payments p WHERE p.order_id = o.id AND p.tenant_id = :tenant_id)';
+    return [$totalSql, $paidSql];
+}
+
+function order_conditions(string $filter, string $search): array
+{
+    $stageRole = order_stage_sql('role');
+    [$totalSql, $paidSql] = order_money_sql();
+    $sql = order_filter_sql($filter, $stageRole, $totalSql, $paidSql);
+    $params = [];
+    if ($filter === 'overdue' || $filter === 'due_today') {
+        $params['today'] = app_today();
+    }
+    if ($search !== '') {
+        $like = like_contains($search);
+        $sql .= ' AND (o.order_number LIKE :q_number ESCAPE \'\\\\\' OR c.name LIKE :q_name ESCAPE \'\\\\\' OR c.phone LIKE :q_phone ESCAPE \'\\\\\')';
+        $params['q_number'] = $like;
+        $params['q_name'] = $like;
+        $params['q_phone'] = $like;
+    }
+    return [$sql, $params];
+}
+
+function order_rows(string $filter, string $search, ?string $id, int $page = 1): array
 {
     $stageCode = order_stage_sql('code');
     $stageName = order_stage_sql('name');
     $stageRole = order_stage_sql('role');
-    $totalSql = '(SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i WHERE i.order_id = o.id AND i.tenant_id = :tenant_id)';
-    $paidSql = '(SELECT COALESCE(SUM(p.amount_kobo), 0) FROM fashion_payments p WHERE p.order_id = o.id AND p.tenant_id = :tenant_id)';
+    [$totalSql, $paidSql] = order_money_sql();
     $sql = 'SELECT o.id, o.order_number, o.customer_id, o.due_date, o.urgent, o.created_at,
             c.name AS customer_name, ' . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo, '
             . $stageCode . ' AS stage_code, ' . $stageName . ' AS stage_name, ' . $stageRole . ' AS stage_role
@@ -202,18 +276,13 @@ function order_rows(string $filter, string $search, ?string $id): array
         $sql .= ' AND o.id = :order_id';
         $params['order_id'] = $id;
     } else {
-        $sql .= order_filter_sql($filter, $stageRole, $totalSql, $paidSql);
-        if ($filter === 'overdue' || $filter === 'due_today') {
-            $params['today'] = date('Y-m-d');
-        }
-        if ($search !== '') {
-            $like = like_contains($search);
-            $sql .= ' AND (o.order_number LIKE :q_number ESCAPE \'\\\\\' OR c.name LIKE :q_name ESCAPE \'\\\\\' OR c.phone LIKE :q_phone ESCAPE \'\\\\\')';
-            $params['q_number'] = $like;
-            $params['q_name'] = $like;
-            $params['q_phone'] = $like;
-        }
-        $sql .= ' ORDER BY o.due_date ASC, o.order_number ASC LIMIT 300';
+        [$where, $params] = order_conditions($filter, $search);
+        $sql .= $where;
+        $page = list_page($page);
+        $sql .= ' ORDER BY o.due_date ASC, o.order_number ASC LIMIT :row_limit OFFSET :row_offset';
+        $params['row_limit'] = list_page_size();
+        $params['row_offset'] = ($page - 1) * list_page_size();
+    }
     }
     $rows = [];
     foreach (db_query($sql, $params) as $row) {
