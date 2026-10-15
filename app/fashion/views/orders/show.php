@@ -56,6 +56,35 @@
             <button class="btn" type="submit"><?= e(t('record_payment')) ?></button>
         </form>
     </section>
+    <?php if ($payment_requests !== [] || $can_request_payment): ?>
+        <section class="card">
+            <h2><?= e(t('request_payment')) ?></h2>
+            <?php if ($email_note): ?>
+                <p><?= e(t('no_email_receipt')) ?></p>
+            <?php endif; ?>
+            <?php foreach ($payment_requests as $request): ?>
+                <label><?= e(t('payment_link')) ?>
+                    <input readonly value="<?= e($request['url']) ?>">
+                </label>
+                <p><a class="btn" href="<?= e(whatsapp_share_href(t('payment_link') . ' ' . $request['url'])) ?>"><?= e(t('share_whatsapp')) ?></a></p>
+                <?php if ($request['placeholder']): ?>
+                    <p><?= e(t('no_email_receipt')) ?></p>
+                <?php endif; ?>
+            <?php endforeach; ?>
+            <?php if ($can_request_payment): ?>
+                <form method="post" action="<?= e(url('/orders/' . $order['id'] . '/payment-request')) ?>">
+                    <?= csrf_field() ?>
+                    <label><?= e(t('amount')) ?>
+                        <input name="amount" inputmode="decimal" value="<?= e($request_amount) ?>">
+                    </label>
+                    <label><?= e(t('customer_email')) ?>
+                        <input name="email" type="email" value="">
+                    </label>
+                    <button class="btn" type="submit"><?= e(t('request_payment')) ?></button>
+                </form>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
     <section class="card">
         <h2><?= e(t('payment_history')) ?></h2>
         <?php if ($payments === []): ?>
@@ -64,7 +93,11 @@
         <?php foreach ($payments as $payment): ?>
             <div class="line">
                 <strong><?= e(money((int) $payment['amount_kobo'])) ?></strong>
-                <span><?= e(t($payment['method'] === 'cash' ? 'cash' : 'transfer')) ?></span>
+                <?php $isPaystack = (string) ($payment['provider'] ?? '') === 'paystack'; ?>
+                <span><?= e(t($isPaystack ? 'mode_paystack' : ($payment['method'] === 'cash' ? 'cash' : 'transfer'))) ?></span>
+                <?php if ($isPaystack && (string) ($payment['provider_reference'] ?? '') !== ''): ?>
+                    <span><?= e((string) $payment['provider_reference']) ?></span>
+                <?php endif; ?>
                 <span><?= e(date('j M Y H:i', strtotime((string) $payment['created_at']))) ?></span>
             </div>
             <?php if ($payment['kind'] === 'reversal' || $payment['reversed']): ?>

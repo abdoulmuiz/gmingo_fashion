@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Session access stays in this file.
  * Other code may call only current_user_id(), current_tenant_id() and require_login()
  * to learn who is signed in. Login and logout write the session; they do not expose it.
+ * A Paystack webhook may bind a shop for the request without starting a login.
  */
 
 function auth_boot(): void
@@ -42,9 +43,26 @@ function current_user_id(): ?string
 
 function current_tenant_id(): ?string
 {
+    $bound = $GLOBALS['gmingo_bound_tenant'] ?? null;
+    if (is_string($bound) && is_uuid($bound)) {
+        return $bound;
+    }
     auth_boot();
     $id = $_SESSION['tenant_id'] ?? null;
     return is_string($id) && is_uuid($id) ? $id : null;
+}
+
+function auth_bind_tenant(string $tenantId): void
+{
+    if (!is_uuid($tenantId)) {
+        throw new RuntimeException('Invalid session identity.');
+    }
+    $GLOBALS['gmingo_bound_tenant'] = $tenantId;
+}
+
+function auth_release_tenant(): void
+{
+    unset($GLOBALS['gmingo_bound_tenant']);
 }
 
 function require_login(): void

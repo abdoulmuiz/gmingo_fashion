@@ -10,6 +10,9 @@
             <input type="radio" name="mode" value="paystack" <?= $settings['mode'] === 'paystack' ? 'checked' : '' ?>>
             <?= e(t('mode_paystack')) ?>
         </label>
+        <?php if (!$settings['domain_ready']): ?>
+            <p><?= e(t('payment_domain_missing')) ?></p>
+        <?php endif; ?>
         <?php if ($settings['mode'] === 'manual' && $settings['secret_mask'] !== ''): ?>
             <p class="meta"><?= e(t('paystack_paused')) ?></p>
         <?php endif; ?>
@@ -29,6 +32,7 @@
                 <input readonly value="<?= e($settings['webhook_url']) ?>">
             </label>
             <p><?= e(t('paystack_guide')) ?></p>
+            <p><?= e(t('paystack_test_event')) ?></p>
         <?php endif; ?>
         <button class="btn" type="submit"><?= e(t('save')) ?></button>
     </form>

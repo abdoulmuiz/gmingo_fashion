@@ -19,6 +19,20 @@ if (!is_string($connected) || !str_ends_with($connected, '_test')) {
 
 tests_reset();
 
+$paymentDomain = (string) (app_config()['payment_placeholder_domain'] ?? '');
+$exampleConfig = (string) file_get_contents(dirname(__DIR__) . '/config/config.example.php');
+$readme = (string) file_get_contents(dirname(__DIR__) . '/README.md');
+check(str_contains($exampleConfig, 'payment_placeholder_domain'), 'the example config names the payment placeholder domain');
+check(str_contains($exampleConfig, 'Paystack mode cannot be switched on while this is empty'), 'the example config explains the empty domain');
+check(str_contains($readme, 'payment_placeholder_domain'), 'the readme names the payment placeholder domain');
+
+function payment_test_domain(string $domain): void
+{
+    $cfg = app_config();
+    $cfg['payment_placeholder_domain'] = $domain;
+    $GLOBALS['gmingo_app_config'] = $cfg;
+}
+
 $secret = 'sk_test_DoNotStoreThis1234';
 $public = 'pk_test_ShopPublicKey';
 
@@ -85,6 +99,19 @@ check(module_enabled('fashion.online_payments') === true, 'the owner can turn on
 require_module('fashion.online_payments');
 check(true, 'online payments open when finance is on');
 
+payment_test_domain('');
+$blocked = payment_settings_save('paystack', $public, $secret);
+check_eq($blocked['error'] ?? '', 'payment_domain_missing', 'paystack mode is refused while the placeholder domain is empty');
+check_eq(payment_mode(), 'manual', 'an empty placeholder domain leaves the shop on manual');
+payment_test_domain('   ');
+check_eq(payment_settings_save('paystack', $public, $secret)['error'] ?? '', 'payment_domain_missing', 'a blank placeholder domain does not switch on Paystack');
+$_SERVER['REQUEST_URI'] = base_path() . '/settings/payments';
+ob_start();
+payment_settings_form();
+$domainPage = (string) ob_get_clean();
+check(str_contains($domainPage, t('payment_domain_missing')), 'the payment page explains the missing domain');
+
+payment_test_domain('https://pay.example.test');
 $saved = payment_settings_save('paystack', $public, $secret);
 check(isset($saved['ok']), 'the owner can choose Paystack');
 check_eq(payment_mode(), 'paystack', 'the shop is in Paystack mode');
@@ -101,7 +128,7 @@ check_eq((string) $stored['paystack_key_last4'], '1234', 'only the last four cha
 $view = payment_settings_view();
 check(!str_contains(json_encode($view), $secret), 'the settings data never includes the secret key');
 check_eq($view['secret_mask'], '••••1234', 'the saved secret is shown as a mask');
-check(str_starts_with($view['webhook_url'], base_path() . '/paystack/webhook/'), 'the webhook address uses the base path');
+check(str_starts_with($view['webhook_url'], base_path() . '/webhooks/paystack/'), 'the webhook address uses the base path');
 check(!preg_match('#https?://#', $view['webhook_url']), 'the webhook address has no domain');
 
 $_SERVER['REQUEST_URI'] = base_path() . '/settings/payments';
@@ -115,6 +142,7 @@ check(str_contains($page, $public), 'the public key can be shown');
 check(str_contains($page, 'name="secret_key"'), 'the secret field is on the form');
 check(str_contains($page, 'value=""'), 'the secret field is left blank');
 check(str_contains($page, t('paystack_guide')), 'the page explains Paystack in plain language');
+check(str_contains($page, 'Paystack cannot reach localhost'), 'the page explains how to send a Paystack test event');
 check(str_contains($page, $view['webhook_url']), 'the page shows the webhook address');
 
 $_COOKIE['lang'] = 'ha';
@@ -243,3 +271,4 @@ ob_start();
 settings_form();
 $financeOff = (string) ob_get_clean();
 check(!str_contains($financeOff, url('/settings/payments')), 'payment settings stay hidden when finance is off');
+payment_test_domain($paymentDomain);

@@ -5,6 +5,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/modules.php';
 require_once dirname(__DIR__) . '/payments/PaystackClient.php';
 require_once dirname(__DIR__) . '/payments/ManualProvider.php';
+require_once dirname(__DIR__) . '/payments/PaystackProvider.php';
+
+function payment_placeholder_domain(): string
+{
+    return trim((string) (app_config()['payment_placeholder_domain'] ?? ''));
+}
 
 function payment_settings_owner(): void
 {
@@ -34,8 +40,67 @@ function payment_links_enabled(): bool
     return payment_mode() === 'paystack';
 }
 
+function payment_placeholder_host(): string
+{
+    $domain = payment_placeholder_domain();
+    if ($domain === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $domain) === 1) {
+        $host = parse_url($domain, PHP_URL_HOST);
+        return is_string($host) ? strtolower($host) : '';
+    }
+    $host = strtolower(explode('/', $domain, 2)[0]);
+    $host = explode(':', $host, 2)[0];
+    return $host;
+}
+
+function payment_public_origin(): string
+{
+    $domain = payment_placeholder_domain();
+    if ($domain === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $domain) !== 1) {
+        $domain = 'https://' . $domain;
+    }
+    $parts = parse_url($domain);
+    if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
+        return '';
+    }
+    if (!in_array(strtolower((string) $parts['scheme']), ['https', 'http'], true)) {
+        return '';
+    }
+    $origin = strtolower((string) $parts['scheme']) . '://' . strtolower((string) $parts['host']);
+    if (isset($parts['port'])) {
+        $origin .= ':' . (int) $parts['port'];
+    }
+    return $origin;
+}
+
+function payment_callback_url(): string
+{
+    $origin = payment_public_origin();
+    if ($origin === '') {
+        return '';
+    }
+    return $origin . url('/pay/return');
+}
+
+function payment_email_is_placeholder(string $email): bool
+{
+    $host = payment_placeholder_host();
+    if ($host === '') {
+        return false;
+    }
+    return preg_match('/^pay-[a-f0-9]{16}@' . preg_quote($host, '/') . '$/', strtolower($email)) === 1;
+}
+
 function payment_provider(): PaymentProvider
 {
+    if (payment_links_enabled()) {
+        return new PaystackProvider();
+    }
     return new ManualProvider();
 }
 
@@ -71,8 +136,9 @@ function payment_settings_view(): array
         'mode' => (string) $row['mode'] === 'paystack' ? 'paystack' : 'manual',
         'public_key' => (string) $row['paystack_public_key'],
         'secret_mask' => $last4 === '' ? '' : '••••' . $last4,
-        'webhook_url' => url('/paystack/webhook/' . (string) $row['webhook_token']),
+        'webhook_url' => url('/webhooks/paystack/' . (string) $row['webhook_token']),
         'links_enabled' => payment_links_enabled(),
+        'domain_ready' => payment_placeholder_domain() !== '',
     ];
 }
 
@@ -85,6 +151,9 @@ function payment_settings_save(string $mode, string $publicKey, string $secret):
     }
     if ($mode === 'paystack' && !module_enabled('fashion.online_payments')) {
         return ['error' => 'online_payments_off'];
+    }
+    if ($mode === 'paystack' && payment_placeholder_domain() === '') {
+        return ['error' => 'payment_domain_missing'];
     }
     $publicKey = trim($publicKey);
     $secret = trim($secret);

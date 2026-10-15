@@ -4,6 +4,8 @@ A shop book for one tailoring business. It runs on plain PHP 8.1 and MySQL. Put 
 
 The demo shop is **Kano Stitches Tailoring**. Log in as `demo@gmingo.test` with the password `password`. Demo data loads only when `environment` in `config/config.php` is `local`.
 
+Paystack stays off until `payment_placeholder_domain` in `config/config.php` is the site address, such as `https://shop.example.com`. Leave that setting empty until the address is known. Paystack mode cannot be switched on while it is empty. The Paystack API address is `paystack_base_url` and should stay `https://api.paystack.co`.
+
 ## Windows with XAMPP
 
 1. Install XAMPP and start Apache and MySQL from the XAMPP control panel.

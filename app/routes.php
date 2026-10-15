@@ -10,6 +10,7 @@ require_once __DIR__ . '/fashion/controllers/settings.php';
 require_once __DIR__ . '/fashion/controllers/stages.php';
 require_once __DIR__ . '/fashion/controllers/payments.php';
 require_once __DIR__ . '/fashion/controllers/payment_settings.php';
+require_once __DIR__ . '/fashion/controllers/paystack.php';
 require_once __DIR__ . '/fashion/controllers/measurements.php';
 
 route('GET', '/', function (): void {
@@ -75,6 +76,20 @@ route('POST', '/orders/{id}/payments', function (array $params): void {
 route('POST', '/orders/{id}/payments/{payment}/reverse', function (array $params): void {
     require_module('fashion.finance');
     payment_reverse_submit((string) $params['id'], (string) $params['payment']);
+});
+
+route('POST', '/orders/{id}/payment-request', function (array $params): void {
+    require_module('fashion.finance');
+    require_module('fashion.online_payments');
+    payment_request_submit((string) $params['id']);
+});
+
+route('POST', '/webhooks/paystack/{token}', function (array $params): void {
+    paystack_webhook_submit((string) $params['token']);
+});
+
+route('GET', '/pay/return', function (): void {
+    paystack_return_show();
 });
 
 route('GET', '/outstanding', function (): void {

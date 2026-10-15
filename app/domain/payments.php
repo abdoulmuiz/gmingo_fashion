@@ -99,6 +99,8 @@ function payment_history(string $orderId): array
             'kind' => (string) $row['kind'],
             'created_at' => (string) $row['created_at'],
             'reversed' => isset($reversed[(string) $row['id']]),
+            'provider' => (string) ($row['provider'] ?? 'manual'),
+            'provider_reference' => (string) ($row['provider_reference'] ?? ''),
         ];
     }
     return $history;

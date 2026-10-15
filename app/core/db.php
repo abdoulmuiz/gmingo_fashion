@@ -366,6 +366,27 @@ function db_execute(string $sql, array $params = []): int
     return $statement->rowCount();
 }
 
+function paystack_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[1]['file'] ?? ''));
+    $allowed = $caller === 'paystack_shop_by_token' || $caller === 'paystack_request_by_reference';
+    if (!$allowed || !str_ends_with($file, '/app/domain/paystack.php')) {
+        throw new RuntimeException('This query is only for Paystack.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
 function platform_query_unsafe(string $sql, array $params = []): array
 {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);

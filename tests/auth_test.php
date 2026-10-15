@@ -65,10 +65,12 @@ check_eq($authFunctions[1], [
     'auth_boot',
     'current_user_id',
     'current_tenant_id',
+    'auth_bind_tenant',
+    'auth_release_tenant',
     'require_login',
     'auth_login',
     'auth_logout',
-], 'auth.php keeps session access next to the three identity functions');
+], 'auth.php keeps session access next to the identity functions');
 check(!str_contains($authSource, 'platform_query_unsafe'), 'auth.php does not look up users');
 
 $before = (int) db()->query('SELECT COUNT(*) FROM fashion_tenants')->fetchColumn();
@@ -82,7 +84,8 @@ check_throws(
         'phone' => '08039876543',
         'company_type' => 'tailor',
     ]),
-    'forced signup failure throws'
+    RuntimeException::class,
+    'Simulated signup failure.'
 );
 $GLOBALS['gmingo_fail_register'] = false;
 $after = (int) db()->query('SELECT COUNT(*) FROM fashion_tenants')->fetchColumn();
@@ -151,8 +154,13 @@ check_eq($_COOKIE['lang'] ?? '', 'ha', 'language cookie is saved');
 $me = db_select('fashion_users', ['id' => current_user_id()]);
 check_eq($me[0]['lang'] ?? '', 'ha', 'language is saved on the user');
 
+$_COOKIE['lang'] = 'en';
 $_POST = ['csrf' => 'not-the-token', 'lang' => 'en', 'back' => 'https://evil.example'];
-check_throws(fn () => lang_submit(), 'a form without the matching token is rejected');
+check_throws(
+    fn () => lang_submit(),
+    HttpException::class,
+    'The form expired. Go back and try again.'
+);
 
 auth_logout();
 $_SERVER['REQUEST_URI'] = base_path() . '/login';
@@ -177,7 +185,7 @@ $registerHtml = (string) ob_get_clean();
 check(str_contains($registerHtml, 'name="csrf"'), 'register form includes a CSRF token');
 check(str_contains($registerHtml, 'name="business_name"'), 'register form asks for the shop');
 
-$openWhenSignedOut = ['/login', '/register'];
+$openWhenSignedOut = ['/login', '/register', '/pay/return'];
 foreach ($GLOBALS['gmingo_routes'] as [$method, $pattern, $handler]) {
     if ($method !== 'GET' || in_array($pattern, $openWhenSignedOut, true)) {
         continue;

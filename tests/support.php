@@ -29,6 +29,7 @@ function tests_reset(): void
     }
     $tables = [
         'fashion_activity_log',
+        'fashion_payment_requests',
         'fashion_payment_settings',
         'fashion_tenant_modules',
         'fashion_expenses',
@@ -51,5 +52,6 @@ function tests_reset(): void
         db()->exec('DELETE FROM ' . $table);
     }
     module_cache_clear();
+    auth_release_tenant();
     auth_logout();
 }

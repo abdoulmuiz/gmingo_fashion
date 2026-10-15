@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/PaystackTransport.php';
+
 final class PaystackClient
 {
     private function __construct(private string $secretKey)
@@ -38,6 +40,39 @@ final class PaystackClient
     public function matches(string $candidate): bool
     {
         return hash_equals($this->secretKey, $candidate);
+    }
+
+    public function signatureMatches(string $payload, string $signature): bool
+    {
+        $signature = strtolower(trim($signature));
+        if (preg_match('/^[a-f0-9]{128}$/', $signature) !== 1) {
+            return false;
+        }
+        return hash_equals(hash_hmac('sha512', $payload, $this->secretKey), $signature);
+    }
+
+    /**
+     * @param array<string, string>|null $json
+     * @return array{status: int, body: string}
+     */
+    public function call(string $method, string $path, ?array $json): array
+    {
+        $base = rtrim((string) (app_config()['paystack_base_url'] ?? ''), '/');
+        if (preg_match('#^https://[A-Za-z0-9.-]+(?::\d+)?$#', $base) !== 1) {
+            throw new RuntimeException('Paystack base URL is not configured.');
+        }
+        $body = '';
+        if ($json !== null) {
+            $encoded = json_encode($json, JSON_UNESCAPED_SLASHES);
+            if (!is_string($encoded)) {
+                throw new RuntimeException('Could not encode the Paystack request.');
+            }
+            $body = $encoded;
+        }
+        return paystack_transport()->send($method, $base . $path, [
+            'Authorization: Bearer ' . $this->secretKey,
+            'Content-Type: application/json',
+        ], $body);
     }
 
     private static function appKey(): string

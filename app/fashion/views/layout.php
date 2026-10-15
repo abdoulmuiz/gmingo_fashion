@@ -5,14 +5,14 @@ declare(strict_types=1);
 /** @var string $title */
 /** @var string $view_file */
 $current = request_path();
-$showNav = !in_array($current, ['/login', '/register'], true);
+$showNav = !in_array($current, ['/login', '/register', '/pay/return'], true);
 ?><!doctype html>
 <html lang="<?= e(current_lang()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> · <?= e(t('app_name')) ?></title>
-    <link rel="stylesheet" href="<?= e(url('/assets/app.css')) ?>">
+    <link rel="stylesheet" href="<?= e(url('/assets/app.css')) ?>?v=<?= e((string) filemtime(dirname(__DIR__, 3) . '/public/assets/app.css')) ?>">
 </head>
 <body>
     <header class="topbar">

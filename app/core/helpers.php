@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 function app_config(): array
 {
-    static $cfg = null;
-    if ($cfg !== null) {
-        return $cfg;
+    if (isset($GLOBALS['gmingo_app_config']) && is_array($GLOBALS['gmingo_app_config'])) {
+        return $GLOBALS['gmingo_app_config'];
     }
     $file = dirname(__DIR__, 2) . '/config/config.php';
     if (!is_file($file)) {
-        $cfg = [
+        $GLOBALS['gmingo_app_config'] = [
             'base_path' => '/gmingo_fashion',
             'db' => [],
         ];
-        return $cfg;
+        return $GLOBALS['gmingo_app_config'];
     }
     $loaded = require $file;
-    $cfg = is_array($loaded) ? $loaded : [];
-    return $cfg;
+    $GLOBALS['gmingo_app_config'] = is_array($loaded) ? $loaded : [];
+    return $GLOBALS['gmingo_app_config'];
 }
 
 function base_path(): string
@@ -94,6 +93,18 @@ function uuid(): string
         substr($hex, 16, 4),
         substr($hex, 20, 12)
     );
+}
+
+function posted_id_list(string $raw): array
+{
+    $ids = [];
+    foreach (explode(',', $raw) as $part) {
+        $part = trim($part);
+        if (is_uuid($part) && !in_array($part, $ids, true)) {
+            $ids[] = $part;
+        }
+    }
+    return $ids;
 }
 
 function is_uuid(string $value): bool
@@ -232,6 +243,11 @@ function tel_href(string $local): string
 function whatsapp_href(string $local): string
 {
     return 'https://wa.me/' . phone_intl($local);
+}
+
+function whatsapp_share_href(string $text): string
+{
+    return 'https://wa.me/?text=' . rawurlencode($text);
 }
 
 function like_contains(string $value): string
