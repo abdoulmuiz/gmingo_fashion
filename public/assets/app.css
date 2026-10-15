@@ -99,6 +99,51 @@ h1 {
     font-weight: 700;
 }
 
+label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 650;
+    margin: 12px 0;
+}
+
+input, select, textarea {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.btn {
+    display: inline-block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--green);
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn-quiet {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+}
+
+.error {
+    color: var(--danger);
+    margin: 8px 0;
+}
+
 @media (min-width: 900px) {
     .app { width: min(1100px, 100%); }
     .bottom-nav { left: 50%; right: auto; width: min(1100px, 100%); transform: translateX(-50%); }

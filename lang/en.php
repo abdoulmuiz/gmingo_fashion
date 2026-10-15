@@ -110,6 +110,7 @@ return [
     'history' => 'Earlier versions',
     'no_measurements' => 'No measurements yet.',
     'saved' => 'Saved.',
+    'save_failed' => 'Could not save. Try again.',
     'good_morning' => 'Good morning',
     'good_afternoon' => 'Good afternoon',
     'good_evening' => 'Good evening',

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+$_COOKIE['lang'] = 'en';
 check_eq(e('<script>'), '&lt;script&gt;', 'e() escapes tags');
 check_eq(e('"a\'b'), '&quot;a&#039;b', 'e() escapes quotes');
 check_eq(t('home'), 'Home', 'English home label');
@@ -24,10 +25,12 @@ check_throws(fn () => url("//example.com"), 'protocol-relative links are rejecte
 $_SERVER['REQUEST_URI'] = base_path() . '/orders?q=1';
 check_eq(request_path(), '/orders', 'request path strips the base path and query');
 
+auth_login(uuid(), uuid());
 ob_start();
 router_dispatch('GET', '/orders');
 $html = (string) ob_get_clean();
-check(str_contains($html, t('orders')) || str_contains($html, 'Orders') || str_contains($html, 'Oda'), 'orders route renders');
+auth_logout();
+check(str_contains($html, t('coming_soon')), 'orders route renders');
 check(str_contains($html, 'bottom-nav'), 'layout includes bottom navigation');
 check(str_contains($html, t('home')) || str_contains($html, 'Home') || str_contains($html, 'Gida'), 'nav has Home');
 check(str_contains($html, 'Board') || str_contains($html, 'Allo'), 'nav has Board');

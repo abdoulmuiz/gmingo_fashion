@@ -28,6 +28,7 @@ if (!preg_match('/^[A-Za-z0-9_]+$/', $testName)) {
 define('GMINGO_DB_NAME', $testName);
 
 require $root . '/app/bootstrap.php';
+require $root . '/app/routes.php';
 require __DIR__ . '/assert.php';
 
 check(str_ends_with(GMINGO_DB_NAME, '_test'), 'tests bind only to a _test database');

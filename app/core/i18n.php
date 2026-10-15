@@ -13,13 +13,13 @@ function current_lang(): string
 
 function i18n_catalog(): array
 {
-    static $catalog = null;
-    if ($catalog !== null) {
-        return $catalog;
+    static $catalogs = [];
+    $code = current_lang();
+    if (isset($catalogs[$code])) {
+        return $catalogs[$code];
     }
     $root = dirname(__DIR__, 2) . '/lang';
     $english = require $root . '/en.php';
-    $code = current_lang();
     $chosen = $english;
     if ($code !== 'en') {
         $file = $root . '/' . $code . '.php';
@@ -30,8 +30,8 @@ function i18n_catalog(): array
             }
         }
     }
-    $catalog = $chosen;
-    return $catalog;
+    $catalogs[$code] = $chosen;
+    return $chosen;
 }
 
 function t(string $key, array $vars = []): string

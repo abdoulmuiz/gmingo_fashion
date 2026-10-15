@@ -49,7 +49,7 @@ function url(string $path): string
 function redirect(string $path): void
 {
     header('Location: ' . url($path));
-    exit;
+    throw new RedirectException($path);
 }
 
 function request_path(): string
@@ -189,4 +189,30 @@ function client_ip(): string
 {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
     return is_string($ip) && $ip !== '' ? $ip : 'cli';
+}
+
+class RedirectException extends RuntimeException
+{
+    public function __construct(private string $path)
+    {
+        parent::__construct('Redirect');
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
+}
+
+class HttpException extends RuntimeException
+{
+    public function __construct(string $message, private int $status = 500)
+    {
+        parent::__construct($message);
+    }
+
+    public function status(): int
+    {
+        return $this->status;
+    }
 }

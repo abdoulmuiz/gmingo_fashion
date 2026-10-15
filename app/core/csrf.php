@@ -30,9 +30,6 @@ function csrf_check(): void
     $sent = $_POST['csrf'] ?? '';
     $cookie = $_COOKIE['csrf_token'] ?? '';
     if (!is_string($sent) || !is_string($cookie) || $cookie === '' || !hash_equals($cookie, $sent)) {
-        http_response_code(419);
-        header('Content-Type: text/html; charset=utf-8');
-        echo e(t('csrf_failed'));
-        exit;
+        throw new HttpException(t('csrf_failed'), 419);
     }
 }

@@ -110,6 +110,7 @@ return [
     'history' => 'Tsoffin sigogi',
     'no_measurements' => 'Babu auna jiki tukuna.',
     'saved' => 'An ajiye.',
+    'save_failed' => 'Ba a iya ajiye ba. Sake gwadawa.',
     'good_morning' => 'Ina kwana',
     'good_afternoon' => 'Barka da rana',
     'good_evening' => 'Barka da yamma',
