@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/domain/customers.php';
+require_once dirname(__DIR__, 2) . '/domain/customers.php';
 
 function customers_index(): void
 {

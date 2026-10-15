@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 function db_settings(): array
 {
-    $db = app_config()['db'] ?? null;
+    $config = app_config();
+    $db = $config['db'] ?? null;
+    if (defined('GMINGO_TESTING') && isset($config['test_db']) && is_array($config['test_db'])) {
+        $db = $config['test_db'];
+    }
     if (!is_array($db)) {
         throw new RuntimeException('Database settings are missing from config/config.php.');
     }
-    foreach (['host', 'port', 'name', 'user', 'pass'] as $key) {
+    foreach (['host', 'port', 'name', 'user'] as $key) {
         if (!array_key_exists($key, $db)) {
             throw new RuntimeException('Database ' . $key . ' must come from config/config.php.');
         }
+    }
+    $password = $db['password'] ?? $db['pass'] ?? null;
+    if (!is_string($password)) {
+        throw new RuntimeException('Database password must come from config/config.php.');
     }
     $name = (string) $db['name'];
     if (defined('GMINGO_DB_NAME')) {
@@ -28,7 +36,7 @@ function db_settings(): array
         'port' => (int) $db['port'],
         'name' => $name,
         'user' => (string) $db['user'],
-        'pass' => (string) $db['pass'],
+        'pass' => $password,
         'socket' => (string) ($db['socket'] ?? ''),
     ];
 }

@@ -11,9 +11,13 @@ function router_dispatch(string $method, string $path): void
 {
     $method = strtoupper($method);
     $path = $path === '' ? '/' : $path;
+    $accepted = [$method];
+    if ($method === 'HEAD') {
+        $accepted[] = 'GET';
+    }
     $routes = $GLOBALS['gmingo_routes'] ?? [];
     foreach ($routes as [$routeMethod, $pattern, $handler]) {
-        if ($routeMethod !== $method) {
+        if (!in_array($routeMethod, $accepted, true)) {
             continue;
         }
         $regex = '#^' . preg_replace('#\{([a-z_]+)\}#', '(?P<$1>[^/]+)', $pattern) . '$#';

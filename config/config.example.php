@@ -8,12 +8,19 @@ declare(strict_types=1);
  */
 return [
     'base_path' => '/gmingo_fashion',
+    'timezone' => 'Africa/Lagos',
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,
         'name' => 'gmingo_fashion',
         'user' => 'root',
-        'pass' => '',
-        'socket' => '',
+        'password' => '',
+    ],
+    'test_db' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'name' => 'gmingo_fashion_test',
+        'user' => 'root',
+        'password' => '',
     ],
 ];

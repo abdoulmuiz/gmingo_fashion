@@ -4,6 +4,8 @@
 !/storage/sessions/.gitkeep
 /storage/ratelimit/*
 !/storage/ratelimit/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
 *.log
 .DS_Store
 Thumbs.db

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/domain/accounts.php';
+require_once dirname(__DIR__, 2) . '/domain/accounts.php';
 
 function safe_back(string $path): string
 {

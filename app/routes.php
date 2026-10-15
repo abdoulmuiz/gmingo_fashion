@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/http/auth_pages.php';
-require_once __DIR__ . '/http/customers.php';
+require_once __DIR__ . '/fashion/controllers/auth_pages.php';
+require_once __DIR__ . '/fashion/controllers/customers.php';
 
 route('GET', '/', function (): void {
-    require_login();
+    http_response_code(200);
     render('home', ['title' => t('home')]);
 });
 

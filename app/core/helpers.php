@@ -104,7 +104,7 @@ function is_uuid(string $value): bool
     );
 }
 
-function money(int $kobo): string
+function format_naira(int $kobo): string
 {
     $negative = $kobo < 0;
     $kobo = abs($kobo);
@@ -118,6 +118,72 @@ function money(int $kobo): string
     }
     $grouped = $digits . $grouped;
     return ($negative ? '-' : '') . '₦' . $grouped . '.' . str_pad((string) $rest, 2, '0', STR_PAD_LEFT);
+}
+
+function money(int $kobo): string
+{
+    return format_naira($kobo);
+}
+
+function flash_set(string $key, string $message): void
+{
+    if (!preg_match('/^[a-z0-9_]{1,32}$/', $key)) {
+        throw new RuntimeException('Invalid flash key.');
+    }
+    $all = flash_read();
+    $all[$key] = $message;
+    flash_write($all);
+}
+
+function flash_get(string $key): ?string
+{
+    if (!preg_match('/^[a-z0-9_]{1,32}$/', $key)) {
+        return null;
+    }
+    $all = flash_read();
+    if (!array_key_exists($key, $all)) {
+        return null;
+    }
+    $message = $all[$key];
+    unset($all[$key]);
+    flash_write($all);
+    return $message;
+}
+
+function flash_read(): array
+{
+    $raw = $_COOKIE['flash'] ?? '';
+    if (!is_string($raw) || $raw === '') {
+        return [];
+    }
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+    $clean = [];
+    foreach ($decoded as $name => $value) {
+        if (!is_string($name) || !is_string($value) || !preg_match('/^[a-z0-9_]{1,32}$/', $name)) {
+            continue;
+        }
+        $clean[$name] = $value;
+    }
+    return $clean;
+}
+
+function flash_write(array $messages): void
+{
+    $payload = json_encode($messages, JSON_UNESCAPED_UNICODE);
+    if (!is_string($payload)) {
+        $payload = '{}';
+    }
+    setcookie('flash', $payload, [
+        'expires' => 0,
+        'path' => base_path() . '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
+    $_COOKIE['flash'] = $payload;
 }
 
 function kobo_from_input(string $raw): ?int
@@ -179,7 +245,7 @@ function render(string $view, array $data = []): void
     if (!preg_match('#^[a-z0-9_/]+$#', $view)) {
         throw new RuntimeException('Invalid view.');
     }
-    $file = dirname(__DIR__) . '/views/' . $view . '.php';
+    $file = dirname(__DIR__) . '/fashion/views/' . $view . '.php';
     if (!is_file($file)) {
         throw new RuntimeException('Missing view.');
     }
@@ -189,7 +255,7 @@ function render(string $view, array $data = []): void
     }
     extract($data, EXTR_SKIP);
     header('Content-Type: text/html; charset=utf-8');
-    require dirname(__DIR__) . '/views/layout.php';
+    require dirname(__DIR__) . '/fashion/views/layout.php';
 }
 
 function nav_active(string $path): string

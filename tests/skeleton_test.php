@@ -43,6 +43,18 @@ $missing = (string) ob_get_clean();
 check(http_response_code() === 404, 'unknown path is 404');
 check(str_contains($missing, 'bottom-nav'), '404 still has navigation');
 
+ob_start();
+router_dispatch('GET', '/');
+$home = (string) ob_get_clean();
+check(http_response_code() === 200, 'home returns 200');
+check(str_contains($home, t('home_title')), 'home renders the shell');
+check(str_contains($home, 'bottom-nav'), 'home has bottom navigation');
+
+ob_start();
+router_dispatch('HEAD', '/');
+ob_end_clean();
+check(http_response_code() === 200, 'HEAD home returns 200');
+
 $ht = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
 foreach (['config', 'app', 'database', 'tools', 'tests', 'storage', 'lang', 'docs', '\\.git', 'public/'] as $needle) {
     check(str_contains($ht, $needle), '.htaccess covers ' . $needle);
@@ -59,7 +71,7 @@ check(current_user_id() === null, 'nobody is signed in yet');
 
 $app = (string) file_get_contents(dirname(__DIR__) . '/app/core/helpers.php');
 $routes = (string) file_get_contents(dirname(__DIR__) . '/app/routes.php');
-$views = (string) file_get_contents(dirname(__DIR__) . '/app/views/layout.php');
+$views = (string) file_get_contents(dirname(__DIR__) . '/app/fashion/views/layout.php');
 check(!str_contains($app . $routes . $views, '$_SESSION'), 'skeleton files do not read the session');
 
 check_eq(money(150050), '₦1,500.50', 'money formats kobo without floats');
@@ -70,3 +82,24 @@ check(kobo_from_input('10.555') === null, 'too many decimal places are rejected'
 check_eq(phone_normalize('+2348031234567'), '08031234567', 'international Nigerian numbers normalize');
 check_eq(phone_intl('08031234567'), '2348031234567', 'WhatsApp uses 234 format');
 check(phone_normalize('12345') === null, 'short numbers are rejected');
+
+check_eq(format_naira(150050), '₦1,500.50', 'format_naira formats whole kobo');
+check_eq(format_naira(0), '₦0.00', 'zero kobo is zero naira');
+flash_set('success', 'Saved.');
+check_eq(flash_get('success'), 'Saved.', 'flash returns the message once');
+check(flash_get('success') === null, 'flash is cleared after reading');
+
+$example = require dirname(__DIR__) . '/config/config.example.php';
+check($example['base_path'] === '/gmingo_fashion', 'example uses the fashion base path');
+check($example['timezone'] === 'Africa/Lagos', 'example timezone is Africa/Lagos');
+check(date_default_timezone_get() === 'Africa/Lagos', 'the app clock is Africa/Lagos');
+foreach (['host', 'port', 'name', 'user', 'password'] as $key) {
+    check(array_key_exists($key, $example['db']), 'db example has ' . $key);
+    check(array_key_exists($key, $example['test_db']), 'test_db example has ' . $key);
+}
+check($example['db']['port'] === 3306, 'database port defaults to 3306');
+check(str_ends_with((string) $example['test_db']['name'], '_test'), 'test database name ends with _test');
+check(is_dir(dirname(__DIR__) . '/app/fashion/controllers'), 'fashion controllers folder exists');
+check(is_dir(dirname(__DIR__) . '/app/fashion/views'), 'fashion views folder exists');
+check(is_dir(dirname(__DIR__) . '/storage/logs'), 'log folder exists');
+check(is_file(dirname(__DIR__) . '/storage/logs/.gitkeep'), 'log folder is tracked empty');

@@ -72,6 +72,21 @@ h1 {
     margin-bottom: 12px;
 }
 
+.flash {
+    background: #e7f6ef;
+    border: 1px solid #b7e0cc;
+    color: var(--green-dark);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 0 0 12px;
+}
+
+.flash-error {
+    background: #fde8ee;
+    border-color: #f3c1cf;
+    color: var(--danger);
+}
+
 .bottom-nav {
     position: fixed;
     left: 0;

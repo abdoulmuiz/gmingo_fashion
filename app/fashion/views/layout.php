@@ -19,6 +19,14 @@ $showNav = !in_array($current, ['/login', '/register'], true);
         <a class="brand" href="<?= e(url('/')) ?>"><?= e(t('app_name')) ?></a>
     </header>
     <main class="app">
+        <?php $flashSuccess = flash_get('success'); ?>
+        <?php $flashError = flash_get('error'); ?>
+        <?php if ($flashSuccess !== null): ?>
+            <p class="flash" role="status"><?= e($flashSuccess) ?></p>
+        <?php endif; ?>
+        <?php if ($flashError !== null): ?>
+            <p class="flash flash-error" role="alert"><?= e($flashError) ?></p>
+        <?php endif; ?>
         <?php require $view_file; ?>
     </main>
     <?php if ($showNav): ?>

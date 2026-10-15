@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/support.php';
 require_once dirname(__DIR__) . '/app/domain/accounts.php';
-require_once dirname(__DIR__) . '/app/http/auth_pages.php';
+require_once dirname(__DIR__) . '/app/fashion/controllers/auth_pages.php';
 
 tests_reset();
 

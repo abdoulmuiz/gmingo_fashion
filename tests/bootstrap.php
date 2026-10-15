@@ -16,7 +16,12 @@ if ($name === '') {
     fwrite(STDERR, "Refusing to run tests: database name is empty.\n");
     exit(1);
 }
-$testName = str_ends_with($name, '_test') ? $name : $name . '_test';
+$testDb = $config['test_db'] ?? null;
+if (is_array($testDb) && isset($testDb['name']) && (string) $testDb['name'] !== '') {
+    $testName = (string) $testDb['name'];
+} else {
+    $testName = str_ends_with($name, '_test') ? $name : $name . '_test';
+}
 if (!str_ends_with($testName, '_test')) {
     fwrite(STDERR, "Refusing to run tests: database name must end with _test.\n");
     exit(1);
