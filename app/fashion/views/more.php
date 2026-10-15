@@ -1,5 +1,6 @@
 <section class="card">
     <h1><?= e(t('more')) ?></h1>
+    <p><a href="<?= e(url('/settings')) ?>"><?= e(t('settings')) ?></a></p>
     <form method="post" action="<?= e(url('/lang')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="back" value="/more">

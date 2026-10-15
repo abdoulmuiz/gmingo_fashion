@@ -11,7 +11,10 @@ $again = schema_migrate();
 $after = tests_table_count($main);
 
 check(str_ends_with((string) db()->query('SELECT DATABASE()')->fetchColumn(), '_test'), 'migration connects to the test database');
-check($applied === ['001_init.sql'] || $applied === [], 'first migrate applies the init file once');
+$knownMigrations = ['001_init.sql', '002_company_modules.sql'];
+foreach ($applied as $file) {
+    check(in_array($file, $knownMigrations, true), $file . ' is a fashion migration');
+}
 check_eq($again, [], 'migrate does not repeat work');
 check_eq($after, $before, 'tests do not create or drop tables in the main database');
 check(schema_sql_is_safe((string) file_get_contents(dirname(__DIR__) . '/database/migrations/001_init.sql')), 'init migration has no drop');
@@ -35,6 +38,8 @@ $expected = [
     'fashion_measurements',
     'fashion_worker_rates',
     'fashion_expenses',
+    'fashion_tenant_modules',
+    'fashion_activity_log',
 ];
 $present = db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 foreach ($expected as $table) {

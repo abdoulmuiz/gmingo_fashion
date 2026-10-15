@@ -121,6 +121,13 @@ label {
     margin: 12px 0;
 }
 
+input[type="checkbox"] {
+    width: auto;
+    display: inline-block;
+    margin: 0 8px 0 0;
+    vertical-align: middle;
+}
+
 input, select, textarea {
     display: block;
     width: 100%;

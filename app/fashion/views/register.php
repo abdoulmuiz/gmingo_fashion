@@ -5,6 +5,15 @@
     <?php endif; ?>
     <form method="post" action="<?= e(url('/register')) ?>">
         <?= csrf_field() ?>
+        <label><?= e(t('company_type')) ?>
+            <select name="company_type" required>
+                <option value=""><?= e(t('company_type')) ?></option>
+                <?php foreach (['tailor', 'factory', 'brand'] as $type): ?>
+                    <option value="<?= e($type) ?>" <?= ($old['company_type'] ?? '') === $type ? 'selected' : '' ?>><?= e(t('type_' . $type)) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <?php if (!empty($errors['company_type'])): ?><p class="error"><?= e(t((string) $errors['company_type'])) ?></p><?php endif; ?>
         <label><?= e(t('business_name')) ?>
             <input name="business_name" value="<?= e($old['business_name'] ?? '') ?>" required>
         </label>

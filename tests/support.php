@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/app/core/schema.php';
+require_once dirname(__DIR__) . '/app/domain/modules.php';
 
 function tests_table_count(string $schema): int
 {
@@ -27,6 +28,8 @@ function tests_reset(): void
         throw new RuntimeException('Refusing to change a database whose name does not end with _test.');
     }
     $tables = [
+        'fashion_activity_log',
+        'fashion_tenant_modules',
         'fashion_expenses',
         'fashion_worker_rates',
         'fashion_measurements',
@@ -46,5 +49,6 @@ function tests_reset(): void
     foreach ($tables as $table) {
         db()->exec('DELETE FROM ' . $table);
     }
+    module_cache_clear();
     auth_logout();
 }

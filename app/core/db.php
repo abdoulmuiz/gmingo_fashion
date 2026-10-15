@@ -129,6 +129,7 @@ function db_append_only(string $table): bool
         'fashion_stage_events',
         'fashion_measurements',
         'fashion_stock_movements',
+        'fashion_activity_log',
     ], true);
 }
 

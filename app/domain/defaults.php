@@ -2,18 +2,26 @@
 
 declare(strict_types=1);
 
-function shop_seed_defaults(): void
+function shop_seed_defaults(string $companyType): void
 {
     $stages = [
         ['new', 'New'],
-        ['cutting', 'Cutting'],
-        ['sewing', 'Sewing'],
-        ['embroidery', 'Embroidery'],
-        ['finishing', 'Finishing'],
-        ['fitting', 'Fitting'],
+        ['in_progress', 'In progress'],
         ['ready', 'Ready'],
-        ['delivered', 'Delivered'],
+        ['completed', 'Completed'],
     ];
+    if ($companyType === 'tailor') {
+        $stages = [
+            ['new', 'New'],
+            ['cutting', 'Cutting'],
+            ['sewing', 'Sewing'],
+            ['embroidery', 'Embroidery'],
+            ['finishing', 'Finishing'],
+            ['fitting', 'Fitting'],
+            ['ready', 'Ready'],
+            ['delivered', 'Delivered'],
+        ];
+    }
     foreach ($stages as $index => $stage) {
         db_insert('fashion_stage_definitions', [
             'code' => $stage[0],
@@ -23,7 +31,7 @@ function shop_seed_defaults(): void
         ]);
     }
 
-    $garments = [
+    $garments = $companyType === 'tailor' ? [
         ['kaftan', 'Kaftan', 0, [
             ['neck', 'neck'],
             ['shoulder', 'shoulder'],
@@ -69,7 +77,7 @@ function shop_seed_defaults(): void
             ['hip', 'hip'],
             ['length', 'length'],
         ]],
-    ];
+    ] : [];
     foreach ($garments as $index => $garment) {
         $garmentId = db_insert('fashion_garment_types', [
             'code' => $garment[0],
@@ -92,7 +100,7 @@ function shop_seed_defaults(): void
     }
 
     db_insert('fashion_order_counters', [
-        'prefix' => 'TK',
+        'prefix' => $companyType === 'tailor' ? 'TK' : 'OR',
         'last_number' => 1000,
     ]);
 }

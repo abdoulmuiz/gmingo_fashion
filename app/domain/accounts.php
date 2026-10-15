@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/defaults.php';
+require_once __DIR__ . '/modules.php';
 
 function account_clean(string $value): string
 {
@@ -16,6 +17,7 @@ function business_register(array $input): array
     $email = strtolower(account_clean((string) ($input['email'] ?? '')));
     $password = (string) ($input['password'] ?? '');
     $phone = phone_normalize((string) ($input['phone'] ?? ''));
+    $companyType = (string) ($input['company_type'] ?? '');
     $errors = [];
     if ($business === '' || strlen($business) > 190) {
         $errors['business_name'] = 'required';
@@ -31,6 +33,9 @@ function business_register(array $input): array
     }
     if ($phone === null) {
         $errors['phone'] = 'invalid_phone';
+    }
+    if (!in_array($companyType, company_types(), true)) {
+        $errors['company_type'] = 'invalid_company_type';
     }
     if ($errors !== []) {
         return ['errors' => $errors];
@@ -53,6 +58,7 @@ function business_register(array $input): array
             'capacity_max' => null,
             'payment_bank' => null,
             'payment_account' => null,
+            'company_type' => $companyType,
             'created_at' => $now,
         ]);
         db_insert('fashion_users', [
@@ -65,7 +71,8 @@ function business_register(array $input): array
             'active' => 1,
             'created_at' => $now,
         ]);
-        shop_seed_defaults();
+        module_seed($companyType, $userId, $now);
+        shop_seed_defaults($companyType);
         if (defined('GMINGO_TESTING') && !empty($GLOBALS['gmingo_fail_register'])) {
             throw new RuntimeException('Simulated signup failure.');
         }

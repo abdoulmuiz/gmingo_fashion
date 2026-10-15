@@ -16,6 +16,7 @@ function sample_shop(string $email = 'owner@example.com'): array
         'email' => $email,
         'password' => 'password',
         'phone' => '08031234567',
+        'company_type' => 'tailor',
     ]);
 }
 
@@ -79,6 +80,7 @@ check_throws(
         'email' => 'broken@example.com',
         'password' => 'password',
         'phone' => '08039876543',
+        'company_type' => 'tailor',
     ]),
     'forced signup failure throws'
 );
@@ -93,6 +95,7 @@ $duplicate = business_register([
     'email' => 'owner@example.com',
     'password' => 'password',
     'phone' => '08037654321',
+    'company_type' => 'tailor',
 ]);
 check_eq($duplicate['errors']['email'] ?? '', 'email_taken', 'email cannot be registered twice');
 

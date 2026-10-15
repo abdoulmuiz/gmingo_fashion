@@ -15,6 +15,7 @@ $shop = business_register([
     'email' => 'customers@example.com',
     'password' => 'password',
     'phone' => '08031234567',
+    'company_type' => 'tailor',
 ]);
 check(isset($shop['user_id']), 'customer tests start from a signed-in shop');
 
@@ -108,6 +109,7 @@ $other = business_register([
     'email' => 'customers-other@example.com',
     'password' => 'password',
     'phone' => '08037654321',
+    'company_type' => 'tailor',
 ]);
 check(isset($other['tenant_id']), 'a second shop can sign up');
 check(customer_profile($amina['id']) === null, 'another shop cannot open the customer');

@@ -63,6 +63,7 @@ function register_submit(): void
         'email' => (string) ($_POST['email'] ?? ''),
         'password' => (string) ($_POST['password'] ?? ''),
         'phone' => (string) ($_POST['phone'] ?? ''),
+        'company_type' => (string) ($_POST['company_type'] ?? ''),
     ];
     try {
         $result = business_register($input);

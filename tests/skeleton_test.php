@@ -25,7 +25,14 @@ check_throws(fn () => url("//example.com"), 'protocol-relative links are rejecte
 $_SERVER['REQUEST_URI'] = base_path() . '/orders?q=1';
 check_eq(request_path(), '/orders', 'request path strips the base path and query');
 
-auth_login(uuid(), uuid());
+business_register([
+    'business_name' => 'Shell Shop',
+    'owner_name' => 'Amina Bello',
+    'email' => 'shell@example.com',
+    'password' => 'password',
+    'phone' => '08035556667',
+    'company_type' => 'tailor',
+]);
 ob_start();
 router_dispatch('GET', '/orders');
 $html = (string) ob_get_clean();

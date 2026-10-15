@@ -31,11 +31,23 @@ $showNav = !in_array($current, ['/login', '/register'], true);
     </main>
     <?php if ($showNav): ?>
         <nav class="bottom-nav" aria-label="<?= e(t('main_menu')) ?>">
-            <a class="<?= e(nav_active('/')) ?>" href="<?= e(url('/')) ?>"><?= e(t('home')) ?></a>
-            <a class="<?= e(nav_active('/orders')) ?>" href="<?= e(url('/orders')) ?>"><?= e(t('orders')) ?></a>
-            <a class="<?= e(nav_active('/board')) ?>" href="<?= e(url('/board')) ?>"><?= e(t('board')) ?></a>
-            <a class="<?= e(nav_active('/customers')) ?>" href="<?= e(url('/customers')) ?>"><?= e(t('customers')) ?></a>
-            <a class="<?= e(nav_active('/more')) ?>" href="<?= e(url('/more')) ?>"><?= e(t('more')) ?></a>
+            <?php
+            $nav = [
+                ['/', 'home', null],
+                ['/orders', 'orders', 'fashion.orders'],
+                ['/board', 'board', 'fashion.production'],
+                ['/customers', 'customers', 'fashion.orders'],
+                ['/more', 'more', null],
+            ];
+            foreach ($nav as [$path, $label, $module]) {
+                if ($module !== null && !module_enabled($module)) {
+                    continue;
+                }
+                ?>
+            <a class="<?= e(nav_active($path)) ?>" href="<?= e(url($path)) ?>"><?= e(t($label)) ?></a>
+                <?php
+            }
+            ?>
         </nav>
     <?php endif; ?>
 </body>
