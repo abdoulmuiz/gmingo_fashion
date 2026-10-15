@@ -43,7 +43,7 @@ a { color: var(--green-dark); }
 .app {
     width: min(720px, 100%);
     margin: 0 auto;
-    padding: 16px 16px 104px;
+    padding: 16px 16px 140px;
 }
 
 h1 {
@@ -153,6 +153,7 @@ input, select, textarea {
     font-weight: 700;
     text-align: center;
     text-decoration: none;
+    scroll-margin-bottom: 120px;
 }
 
 .btn-quiet {
@@ -212,6 +213,38 @@ input, select, textarea {
 
 .actions { display: flex; gap: 8px; }
 .actions .btn { flex: 1; }
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+    padding-bottom: 4px;
+}
+
+.tabs a {
+    flex: 0 0 auto;
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.tabs a.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+}
+
+.item-row {
+    border-top: 1px solid var(--line);
+    margin-top: 8px;
+    padding-top: 4px;
+}
 
 .line {
     display: flex;

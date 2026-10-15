@@ -99,20 +99,10 @@ customers_show($amina['id']);
 $show = (string) ob_get_clean();
 check(str_contains($show, 'https://wa.me/2348031234567'), 'profile has a WhatsApp button');
 check(str_contains($show, 'tel:+2348031234567'), 'profile has a Call button');
-check(!str_contains($show, '/orders/new'), 'New Order stays hidden until that step exists');
+check(str_contains($show, '/orders/new?customer=' . $amina['id']), 'profile links to a new order for this customer');
 check(str_contains($show, 'TK1001'), 'profile lists the order');
 check(str_contains($show, money(2000000)), 'profile shows the calculated balance');
 check(str_contains($show, t('customer_since')), 'profile shows customer since');
-
-$routesBefore = $GLOBALS['gmingo_routes'];
-route('GET', '/orders/new', static function (): void {
-});
-ob_start();
-customers_show($amina['id']);
-$withNewOrder = (string) ob_get_clean();
-$GLOBALS['gmingo_routes'] = $routesBefore;
-check(str_contains($withNewOrder, '/orders/new?customer=' . $amina['id']), 'New Order appears when the orders step exists');
-check(!route_defined('GET', '/orders/new'), 'the temporary orders route is removed');
 
 $storedColumns = db()->prepare(
     'SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name'

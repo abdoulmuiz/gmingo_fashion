@@ -36,7 +36,8 @@ business_register([
 ob_start();
 router_dispatch('GET', '/orders');
 $html = (string) ob_get_clean();
-check(str_contains($html, t('coming_soon')), 'orders route renders');
+check(str_contains($html, t('no_orders')), 'orders route renders the list');
+check(str_contains($html, t('all')), 'orders list has filter tabs');
 check(str_contains($html, 'bottom-nav'), 'layout includes bottom navigation');
 check(str_contains($html, t('home')) || str_contains($html, 'Home') || str_contains($html, 'Gida'), 'nav has Home');
 check(str_contains($html, 'Board') || str_contains($html, 'Allo'), 'nav has Board');

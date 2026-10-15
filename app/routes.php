@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/fashion/controllers/auth_pages.php';
 require_once __DIR__ . '/fashion/controllers/customers.php';
+require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
 
 route('GET', '/', function (): void {
@@ -38,7 +39,22 @@ route('POST', '/lang', function (): void {
 
 route('GET', '/orders', function (): void {
     require_module('fashion.orders');
-    render('simple', ['title' => t('orders'), 'body' => t('coming_soon')]);
+    orders_index();
+});
+
+route('GET', '/orders/new', function (): void {
+    require_module('fashion.orders');
+    orders_form();
+});
+
+route('POST', '/orders', function (): void {
+    require_module('fashion.orders');
+    orders_save();
+});
+
+route('GET', '/orders/{id}', function (array $params): void {
+    require_module('fashion.orders');
+    orders_show((string) $params['id']);
 });
 
 route('GET', '/board', function (): void {
