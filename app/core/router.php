@@ -7,6 +7,17 @@ function route(string $method, string $pattern, callable $handler): void
     $GLOBALS['gmingo_routes'][] = [strtoupper($method), $pattern, $handler];
 }
 
+function route_defined(string $method, string $pattern): bool
+{
+    $method = strtoupper($method);
+    foreach ($GLOBALS['gmingo_routes'] ?? [] as $route) {
+        if ($route[0] === $method && $route[1] === $pattern) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function router_dispatch(string $method, string $path): void
 {
     $method = strtoupper($method);

@@ -10,7 +10,9 @@
     <div class="actions">
         <a class="btn" href="<?= e(tel_href((string) $customer['phone'])) ?>"><?= e(t('call')) ?></a>
         <a class="btn" href="<?= e(whatsapp_href((string) $customer['phone'])) ?>"><?= e(t('whatsapp')) ?></a>
-        <a class="btn" href="<?= e(url('/orders/new?customer=' . $customer['id'])) ?>"><?= e(t('new_order')) ?></a>
+        <?php if (route_defined('GET', '/orders/new')): ?>
+            <a class="btn" href="<?= e(url('/orders/new?customer=' . $customer['id'])) ?>"><?= e(t('new_order')) ?></a>
+        <?php endif; ?>
     </div>
 </section>
 <section class="card">
@@ -19,10 +21,11 @@
         <p><?= e(t('no_orders')) ?></p>
     <?php endif; ?>
     <?php foreach ($customer['orders'] as $order): ?>
-        <a class="line" href="<?= e(url('/orders/' . $order['id'])) ?>">
+        <?php $orderOpen = route_defined('GET', '/orders/{id}'); ?>
+        <?php if ($orderOpen): ?><a class="line" href="<?= e(url('/orders/' . $order['id'])) ?>"><?php else: ?><div class="line"><?php endif; ?>
             <strong><?= e($order['order_number']) ?></strong>
             <span><?= e($order['due_date']) ?></span>
             <span><?= e(money((int) $order['balance_kobo'])) ?></span>
-        </a>
+        <?php if ($orderOpen): ?></a><?php else: ?></div><?php endif; ?>
     <?php endforeach; ?>
 </section>

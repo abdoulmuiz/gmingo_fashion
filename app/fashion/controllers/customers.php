@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/domain/customers.php';
 
 function customers_index(): void
 {
+    require_module('fashion.orders');
     $query = trim((string) ($_GET['q'] ?? ''));
     render('customers/index', [
         'title' => t('customers'),
@@ -16,6 +17,7 @@ function customers_index(): void
 
 function customers_form(array $errors = [], array $old = []): void
 {
+    require_module('fashion.orders');
     render('customers/form', [
         'title' => t('new_customer'),
         'errors' => $errors,
@@ -25,6 +27,7 @@ function customers_form(array $errors = [], array $old = []): void
 
 function customers_save(): void
 {
+    require_module('fashion.orders');
     csrf_check();
     $input = [
         'name' => (string) ($_POST['name'] ?? ''),
@@ -42,6 +45,7 @@ function customers_save(): void
 
 function customers_show(string $id): void
 {
+    require_module('fashion.orders');
     $profile = customer_profile($id);
     if ($profile === null) {
         http_response_code(404);

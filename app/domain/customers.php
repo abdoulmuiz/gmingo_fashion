@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/modules.php';
+
 function customer_create(array $input): array
 {
+    require_module('fashion.orders');
     $name = trim((string) ($input['name'] ?? ''));
     $phone = phone_normalize((string) ($input['phone'] ?? ''));
     $gender = (string) ($input['gender'] ?? '');
@@ -37,6 +40,7 @@ function customer_create(array $input): array
 
 function customer_search(string $query): array
 {
+    require_module('fashion.orders');
     $query = trim($query);
     if ($query === '') {
         return db_select('fashion_customers', [], ['order' => 'name ASC', 'limit' => 200]);
@@ -49,6 +53,7 @@ function customer_search(string $query): array
 
 function customer_orders(string $customerId): array
 {
+    require_module('fashion.orders');
     $rows = db_query(
         'SELECT o.id, o.order_number, o.due_date, o.created_at,
             (SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i WHERE i.order_id = o.id AND i.tenant_id = :tenant_id) AS total_kobo,
@@ -77,6 +82,7 @@ function customer_orders(string $customerId): array
 
 function customer_profile(string $id): ?array
 {
+    require_module('fashion.orders');
     if (!is_uuid($id)) {
         return null;
     }

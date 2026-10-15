@@ -99,9 +99,29 @@ customers_show($amina['id']);
 $show = (string) ob_get_clean();
 check(str_contains($show, 'https://wa.me/2348031234567'), 'profile has a WhatsApp button');
 check(str_contains($show, 'tel:+2348031234567'), 'profile has a Call button');
-check(str_contains($show, '/orders/new?customer=' . $amina['id']), 'profile has a New Order button');
+check(!str_contains($show, '/orders/new'), 'New Order stays hidden until that step exists');
 check(str_contains($show, 'TK1001'), 'profile lists the order');
 check(str_contains($show, money(2000000)), 'profile shows the calculated balance');
+check(str_contains($show, t('customer_since')), 'profile shows customer since');
+
+$routesBefore = $GLOBALS['gmingo_routes'];
+route('GET', '/orders/new', static function (): void {
+});
+ob_start();
+customers_show($amina['id']);
+$withNewOrder = (string) ob_get_clean();
+$GLOBALS['gmingo_routes'] = $routesBefore;
+check(str_contains($withNewOrder, '/orders/new?customer=' . $amina['id']), 'New Order appears when the orders step exists');
+check(!route_defined('GET', '/orders/new'), 'the temporary orders route is removed');
+
+$storedColumns = db()->prepare(
+    'SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name'
+);
+$storedColumns->execute(['table_name' => 'fashion_customers']);
+$columnNames = $storedColumns->fetchAll(PDO::FETCH_COLUMN);
+foreach (['spent_kobo', 'owed_kobo', 'total_spent', 'amount_owed', 'balance_kobo'] as $banned) {
+    check(!in_array($banned, $columnNames, true), 'customers do not store ' . $banned);
+}
 
 $other = business_register([
     'business_name' => 'Other Customer Shop',
@@ -123,3 +143,45 @@ $_POST = [
     'customer_type' => 'regular',
 ];
 check_throws(static fn () => customers_save(), 'saving a customer requires the CSRF token');
+
+auth_login((string) $shop['user_id'], (string) $shop['tenant_id']);
+module_save([
+    'fashion.production',
+    'fashion.finance',
+    'fashion.measurements',
+    'fashion.communication',
+]);
+check(module_enabled('fashion.orders') === false, 'orders module is switched off');
+ob_start();
+router_dispatch('GET', '/');
+$closedHome = (string) ob_get_clean();
+check(!str_contains($closedHome, 'href="' . url('/customers') . '"'), 'Customers link is hidden when orders is off');
+foreach (['/customers', '/customers/new', '/customers/' . $amina['id']] as $path) {
+    try {
+        ob_start();
+        router_dispatch('GET', $path);
+        ob_end_clean();
+        check(false, $path . ' stays closed');
+    } catch (HttpException $e) {
+        ob_end_clean();
+        check($e->status() === 403, $path . ' returns 403');
+    }
+}
+try {
+    router_dispatch('POST', '/customers');
+    check(false, 'saving a customer stays closed');
+} catch (HttpException $e) {
+    check($e->status() === 403, 'saving a customer returns 403 when orders is off');
+}
+try {
+    customer_create([
+        'name' => 'Zainab',
+        'phone' => '08134567890',
+        'gender' => 'female',
+        'customer_type' => 'regular',
+    ]);
+    check(false, 'creating a customer stays closed');
+} catch (HttpException $e) {
+    check($e->status() === 403, 'creating a customer returns 403 when orders is off');
+}
+check_throws(static fn () => customers_index(), 'the customer list returns 403 when orders is off');
