@@ -9,6 +9,8 @@ declare(strict_types=1);
 return [
     'base_path' => '/gmingo_fashion',
     'timezone' => 'Africa/Lagos',
+    // Demo data loads only when this is local.
+    'environment' => 'local',
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,
