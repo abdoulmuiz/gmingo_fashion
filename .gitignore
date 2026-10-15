@@ -1,0 +1,8 @@
+/config/config.php
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+/storage/ratelimit/*
+!/storage/ratelimit/.gitkeep
+*.log
+.DS_Store
+Thumbs.db

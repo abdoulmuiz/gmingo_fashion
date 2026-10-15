@@ -1,0 +1,9 @@
+Options -Indexes
+RewriteEngine On
+
+# Keep source, config, data, and tools off the web.
+RewriteRule ^(config|app|database|tools|tests|storage|lang|docs|\.git)(/|$) - [F,L]
+
+# The site itself lives in public/.
+RewriteRule ^public/ - [L]
+RewriteRule ^(.*)$ public/$1 [L]
