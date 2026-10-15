@@ -9,6 +9,7 @@ require_once __DIR__ . '/fashion/controllers/orders.php';
 require_once __DIR__ . '/fashion/controllers/settings.php';
 require_once __DIR__ . '/fashion/controllers/stages.php';
 require_once __DIR__ . '/fashion/controllers/payments.php';
+require_once __DIR__ . '/fashion/controllers/payment_settings.php';
 require_once __DIR__ . '/fashion/controllers/measurements.php';
 
 route('GET', '/', function (): void {
@@ -117,6 +118,14 @@ route('GET', '/settings', function (): void {
 
 route('POST', '/settings', function (): void {
     settings_submit();
+});
+
+route('GET', '/settings/payments', function (): void {
+    payment_settings_form();
+});
+
+route('POST', '/settings/payments', function (): void {
+    payment_settings_submit();
 });
 
 route('GET', '/settings/stages', function (): void {

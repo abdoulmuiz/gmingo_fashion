@@ -12,6 +12,9 @@
         <?php endforeach; ?>
         <button class="btn" type="submit"><?= e(t('save')) ?></button>
     </form>
+    <?php if (module_enabled('fashion.finance')): ?>
+        <p><a href="<?= e(url('/settings/payments')) ?>"><?= e(t('payment_settings')) ?></a></p>
+    <?php endif; ?>
     <?php if (module_enabled('fashion.production')): ?>
         <p><a href="<?= e(url('/settings/stages')) ?>"><?= e(t('stages_settings')) ?></a></p>
     <?php endif; ?>

@@ -11,7 +11,7 @@ $again = schema_migrate();
 $after = tests_table_count($main);
 
 check(str_ends_with((string) db()->query('SELECT DATABASE()')->fetchColumn(), '_test'), 'migration connects to the test database');
-$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql'];
+$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql'];
 foreach ($applied as $file) {
     check(in_array($file, $knownMigrations, true), $file . ' is a fashion migration');
 }
@@ -40,6 +40,7 @@ $expected = [
     'fashion_expenses',
     'fashion_tenant_modules',
     'fashion_activity_log',
+    'fashion_payment_settings',
 ];
 $present = db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 foreach ($expected as $table) {

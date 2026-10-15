@@ -30,6 +30,9 @@ function payment_record(string $orderId, string $amount, string $method): array
         'kind' => 'payment',
         'user_id' => $userId,
         'created_at' => date('Y-m-d H:i:s'),
+        'provider' => 'manual',
+        'provider_reference' => null,
+        'source' => 'staff',
     ]);
     return ['id' => $id, 'amount_kobo' => $kobo];
 }
@@ -58,6 +61,10 @@ function payment_reverse(string $orderId, string $paymentId): array
         throw new RuntimeException('Missing session.');
     }
     $amount = (int) $payment['amount_kobo'];
+    $provider = (string) ($payment['provider'] ?? 'manual');
+    if (!in_array($provider, ['manual', 'paystack'], true)) {
+        $provider = 'manual';
+    }
     $id = db_insert('fashion_payments', [
         'order_id' => $orderId,
         'amount_kobo' => -$amount,
@@ -66,6 +73,9 @@ function payment_reverse(string $orderId, string $paymentId): array
         'kind' => 'reversal',
         'user_id' => $userId,
         'created_at' => date('Y-m-d H:i:s'),
+        'provider' => $provider,
+        'provider_reference' => null,
+        'source' => 'staff',
     ]);
     return ['id' => $id, 'amount_kobo' => -$amount];
 }

@@ -29,6 +29,7 @@ function tests_reset(): void
     }
     $tables = [
         'fashion_activity_log',
+        'fashion_payment_settings',
         'fashion_tenant_modules',
         'fashion_expenses',
         'fashion_worker_rates',

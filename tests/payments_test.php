@@ -63,6 +63,8 @@ $stored = db_select('fashion_payments', ['id' => $transfer['id']])[0];
 check(strpos((string) $stored['amount_kobo'], '.') === false, 'the stored amount has no decimal point');
 check_eq((int) $stored['amount_kobo'], 700025, 'the stored amount is whole kobo');
 check_eq((string) $stored['user_id'], (string) current_user_id(), 'a payment records who took it');
+check_eq((string) $stored['provider'], 'manual', 'a recorded payment is manual');
+check_eq((string) $stored['source'], 'staff', 'a recorded payment is entered by staff');
 check((string) $stored['created_at'] !== '', 'a payment records when it was taken');
 $both = order_find($order['id']);
 check_eq($both['paid_kobo'], 1200025, 'payments add together');

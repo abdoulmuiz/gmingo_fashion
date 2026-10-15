@@ -58,7 +58,8 @@ $tailorKeys = [
     'fashion.production',
 ];
 check_eq(enabled_module_keys(), $tailorKeys, 'tailor starts with orders, production, finance, measurements and communication');
-check(count(db_select('fashion_tenant_modules')) === 8, 'every module has a switch');
+check(count(db_select('fashion_tenant_modules')) === 9, 'every module has a switch');
+check(module_enabled('fashion.online_payments') === false, 'tailor online payments start off');
 $tailorOrders = db_select('fashion_tenant_modules', ['module_key' => 'fashion.orders']);
 check(count(db_select('fashion_garment_types', ['code' => 'kaftan'])) === 1, 'tailor keeps garment settings on the business');
 $tailorStages = array_column(db_select('fashion_stage_definitions', [], ['order' => 'sort_order ASC']), 'name');
@@ -72,6 +73,7 @@ $factoryKeys = [
     'fashion.staff',
 ];
 check_eq(enabled_module_keys(), $factoryKeys, 'factory starts with production, finance, inventory and staff');
+check(module_enabled('fashion.online_payments') === false, 'factory online payments start off');
 check(db_select('fashion_garment_types') === [], 'factory is not given tailor garment types');
 $factoryStages = array_column(db_select('fashion_stage_definitions'), 'name');
 check(!in_array('Cutting', $factoryStages, true), 'factory stage names do not assume tailoring');
@@ -109,6 +111,7 @@ $brandKeys = [
     'fashion.sales',
 ];
 check_eq(enabled_module_keys(), $brandKeys, 'brand starts with orders, finance, communication, inventory and sales');
+check(module_enabled('fashion.online_payments') === false, 'brand online payments start off');
 $brandOrders = db_select('fashion_tenant_modules', ['module_key' => 'fashion.orders']);
 check((int) $brandOrders[0]['enabled'] === 1, 'brand orders start on');
 try {

@@ -11,6 +11,9 @@ return [
     'timezone' => 'Africa/Lagos',
     // Demo data loads only when this is local.
     'environment' => 'local',
+    // Long random string used to encrypt Paystack secret keys.
+    // Put the real value only in config.php. Do not commit config.php.
+    'app_key' => '',
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,

@@ -68,6 +68,7 @@ foreach (module_defaults('tailor') as $key) {
 check(module_enabled('fashion.inventory') === false, 'inventory stays off for the tailor demo');
 check(module_enabled('fashion.sales') === false, 'sales stays off for the tailor demo');
 check(module_enabled('fashion.staff') === false, 'staff stays off for the tailor demo');
+check(module_enabled('fashion.online_payments') === false, 'online payments stay off for the tailor demo');
 
 check(count(db_select('fashion_customers', [], ['limit' => 20])) === 10, 'demo has 10 customers');
 $orders = order_list('all', '');

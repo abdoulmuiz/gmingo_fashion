@@ -18,6 +18,7 @@ function module_keys(): array
         'fashion.inventory',
         'fashion.sales',
         'fashion.staff',
+        'fashion.online_payments',
     ];
 }
 
@@ -93,6 +94,10 @@ function require_module(string $key): void
 {
     require_login();
     if (!module_enabled($key)) {
+        http_response_code(403);
+        throw new HttpException(t('module_disabled'), 403);
+    }
+    if ($key === 'fashion.online_payments' && !module_enabled('fashion.finance')) {
         http_response_code(403);
         throw new HttpException(t('module_disabled'), 403);
     }
