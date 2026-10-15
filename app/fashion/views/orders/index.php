@@ -35,3 +35,13 @@
         <p class="meta"><?= e($order['customer_name']) ?> · <?= e($order['due_date']) ?></p>
     </a>
 <?php endforeach; ?>
+<?php if ($has_previous || $has_next): ?>
+    <nav class="pager" aria-label="<?= e(t('orders')) ?>">
+        <?php if ($has_previous): ?>
+            <a href="<?= e(url($previous_path)) ?>"><?= e(t('previous')) ?></a>
+        <?php endif; ?>
+        <?php if ($has_next): ?>
+            <a href="<?= e(url($next_path)) ?>"><?= e(t('next')) ?></a>
+        <?php endif; ?>
+    </nav>
+<?php endif; ?>

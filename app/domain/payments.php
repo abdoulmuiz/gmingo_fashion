@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/modules.php';
+require_once __DIR__ . '/orders.php';
 
 function payment_record(string $orderId, string $amount, string $method): array
 {
@@ -106,40 +107,56 @@ function payment_history(string $orderId): array
     return $history;
 }
 
-function payment_outstanding(): array
+function payment_outstanding(int $page = 1): array
 {
     require_module('fashion.finance');
+    $page = list_page($page);
     if (!module_enabled('fashion.orders')) {
-        return ['orders_off' => true, 'rows' => [], 'total_kobo' => 0];
+        return [
+            'orders_off' => true,
+            'rows' => [],
+            'total_kobo' => 0,
+            'page' => $page,
+            'has_previous' => false,
+            'has_next' => false,
+        ];
     }
-    $rows = db_query(
-        'SELECT o.id, o.order_number, o.due_date, c.name AS customer_name,
-            (SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i
-             WHERE i.order_id = o.id AND i.tenant_id = :tenant_id) AS total_kobo,
-            (SELECT COALESCE(SUM(p.amount_kobo), 0) FROM fashion_payments p
-             WHERE p.order_id = o.id AND p.tenant_id = :tenant_id) AS paid_kobo
-         FROM fashion_orders o
+    [$totalSql, $paidSql] = order_money_sql();
+    $where = ' FROM fashion_orders o
          INNER JOIN fashion_customers c ON c.id = o.customer_id AND c.tenant_id = :tenant_id
          WHERE o.tenant_id = :tenant_id
-           AND (SELECT COALESCE(SUM(i.quantity * i.price_kobo), 0) FROM fashion_order_items i
-                WHERE i.order_id = o.id AND i.tenant_id = :tenant_id)
-             > (SELECT COALESCE(SUM(p.amount_kobo), 0) FROM fashion_payments p
-                WHERE p.order_id = o.id AND p.tenant_id = :tenant_id)
-         ORDER BY o.due_date ASC, o.order_number ASC
-         LIMIT 300'
+           AND ' . $totalSql . ' > ' . $paidSql;
+    $summary = db_query(
+        'SELECT COUNT(*) AS row_count, COALESCE(SUM(' . $totalSql . ' - ' . $paidSql . '), 0) AS total_kobo' . $where
+    );
+    $rowCount = (int) ($summary[0]['row_count'] ?? 0);
+    $total = (int) ($summary[0]['total_kobo'] ?? 0);
+    $rows = db_query(
+        'SELECT o.id, o.order_number, o.due_date, c.name AS customer_name, '
+            . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo'
+            . $where
+            . ' ORDER BY o.due_date ASC, o.order_number ASC LIMIT :row_limit OFFSET :row_offset',
+        [
+            'row_limit' => list_page_size(),
+            'row_offset' => ($page - 1) * list_page_size(),
+        ]
     );
     $list = [];
-    $total = 0;
     foreach ($rows as $row) {
-        $balance = (int) $row['total_kobo'] - (int) $row['paid_kobo'];
-        $total += $balance;
         $list[] = [
             'id' => (string) $row['id'],
             'order_number' => (string) $row['order_number'],
             'customer_name' => (string) $row['customer_name'],
             'due_date' => (string) $row['due_date'],
-            'balance_kobo' => $balance,
+            'balance_kobo' => (int) $row['total_kobo'] - (int) $row['paid_kobo'],
         ];
     }
-    return ['orders_off' => false, 'rows' => $list, 'total_kobo' => $total];
+    return [
+        'orders_off' => false,
+        'rows' => $list,
+        'total_kobo' => $total,
+        'page' => $page,
+        'has_previous' => $page > 1,
+        'has_next' => $page * list_page_size() < $rowCount,
+    ];
 }

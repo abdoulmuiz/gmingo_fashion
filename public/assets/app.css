@@ -256,6 +256,24 @@ input, select, textarea {
 
 h2 { font-size: 1.05rem; margin: 0 0 8px; }
 
+.pager {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 24px;
+}
+
+.pager a {
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+
 @media (min-width: 900px) {
     .app { width: min(1100px, 100%); }
     .bottom-nav { left: 50%; right: auto; width: min(1100px, 100%); transform: translateX(-50%); }

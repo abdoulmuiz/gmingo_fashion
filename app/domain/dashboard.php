@@ -81,47 +81,51 @@ function dashboard_card(string $key, string $value, string $note = ''): array
 
 function dashboard_order_counts(): array
 {
-    $today = date('Y-m-d');
+    require_module('fashion.orders');
+    $today = app_today();
     [$weekStart, $weekEnd] = dashboard_week($today);
-    $active = 0;
-    $week = 0;
-    $overdue = 0;
-    $ready = 0;
+    $stageRole = order_stage_sql('role');
+    $open = '(' . $stageRole . ' IS NULL OR ' . $stageRole . ' NOT IN (\'ready\', \'finished\'))';
+    $unfinished = '(' . $stageRole . ' IS NULL OR ' . $stageRole . ' <> \'finished\')';
+    $rows = db_query(
+        'SELECT
+            COALESCE(SUM(CASE WHEN ' . $open . ' THEN 1 ELSE 0 END), 0) AS active_count,
+            COALESCE(SUM(CASE WHEN o.due_date >= :week_start AND o.due_date <= :week_end AND ' . $unfinished . ' THEN 1 ELSE 0 END), 0) AS week_count,
+            COALESCE(SUM(CASE WHEN o.due_date < :today AND ' . $unfinished . ' THEN 1 ELSE 0 END), 0) AS overdue_count,
+            COALESCE(SUM(CASE WHEN ' . $stageRole . ' = \'ready\' THEN 1 ELSE 0 END), 0) AS ready_count
+         FROM fashion_orders o
+         WHERE o.tenant_id = :tenant_id',
+        ['week_start' => $weekStart, 'week_end' => $weekEnd, 'today' => $today]
+    );
+    $counts = $rows[0] ?? [];
+    $attentionRows = db_query(
+        'SELECT o.id, o.order_number, o.due_date, o.urgent, c.name AS customer_name, '
+            . $stageRole . ' AS stage_role
+         FROM fashion_orders o
+         INNER JOIN fashion_customers c ON c.id = o.customer_id AND c.tenant_id = :tenant_id
+         WHERE o.tenant_id = :tenant_id
+           AND ((o.due_date < :today AND ' . $unfinished . ') OR o.urgent = 1)
+         ORDER BY o.due_date ASC, o.order_number ASC',
+        ['today' => $today]
+    );
     $attention = [];
-    foreach (order_list('all', '') as $order) {
-        $role = $order['stage_role'];
-        $finished = $role === 'finished';
-        $due = (string) $order['due_date'];
-        $isOverdue = $due < $today && !$finished;
-        $isReady = $role === 'ready';
-        if (!$isReady && !$finished) {
-            $active++;
-        }
-        if ($due >= $weekStart && $due <= $weekEnd && !$finished) {
-            $week++;
-        }
-        if ($isOverdue) {
-            $overdue++;
-        }
-        if ($isReady) {
-            $ready++;
-        }
-        if ($isOverdue || $order['urgent']) {
-            $attention[] = [
-                'id' => (string) $order['id'],
-                'order_number' => (string) $order['order_number'],
-                'customer_name' => (string) $order['customer_name'],
-                'due_date' => $due,
-                'urgent' => $order['urgent'] === true,
-                'overdue' => $isOverdue,
-            ];
-        }
+    foreach ($attentionRows as $row) {
+        $role = $row['stage_role'];
+        $finished = is_string($role) && $role === 'finished';
+        $attention[] = [
+            'id' => (string) $row['id'],
+            'order_number' => (string) $row['order_number'],
+            'customer_name' => (string) $row['customer_name'],
+            'due_date' => (string) $row['due_date'],
+            'urgent' => (int) $row['urgent'] === 1,
+            'overdue' => (string) $row['due_date'] < $today && !$finished,
+        ];
     }
     return [
-        'active' => $active,
-        'week' => $week,
-        'overdue' => $overdue,
-        'ready' => $ready,
+        'active' => (int) ($counts['active_count'] ?? 0),
+        'week' => (int) ($counts['week_count'] ?? 0),
+        'overdue' => (int) ($counts['overdue_count'] ?? 0),
+        'ready' => (int) ($counts['ready_count'] ?? 0),
         'attention' => $attention,
     ];
 }

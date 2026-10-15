@@ -7,12 +7,15 @@ require_once dirname(__DIR__, 2) . '/domain/payments.php';
 function outstanding_show(): void
 {
     require_module('fashion.finance');
-    $page = payment_outstanding();
+    $page = payment_outstanding(list_page($_GET['page'] ?? '1'));
     render('outstanding', [
         'title' => t('outstanding'),
         'orders_off' => $page['orders_off'],
         'rows' => $page['rows'],
         'total_kobo' => $page['total_kobo'],
+        'page' => $page['page'],
+        'has_previous' => $page['has_previous'],
+        'has_next' => $page['has_next'],
     ]);
 }
 

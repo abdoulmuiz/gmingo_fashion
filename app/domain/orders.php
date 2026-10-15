@@ -283,7 +283,6 @@ function order_rows(string $filter, string $search, ?string $id, int $page = 1):
         $params['row_limit'] = list_page_size();
         $params['row_offset'] = ($page - 1) * list_page_size();
     }
-    }
     $rows = [];
     foreach (db_query($sql, $params) as $row) {
         $rows[] = order_present($row);

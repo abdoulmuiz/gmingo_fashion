@@ -19,5 +19,15 @@
             </a>
             <p class="meta"><?= e($row['due_date']) ?></p>
         <?php endforeach; ?>
+        <?php if ($has_previous || $has_next): ?>
+            <nav class="pager" aria-label="<?= e(t('outstanding')) ?>">
+                <?php if ($has_previous): ?>
+                    <a href="<?= e(url('/outstanding?page=' . (string) ($page - 1))) ?>"><?= e(t('previous')) ?></a>
+                <?php endif; ?>
+                <?php if ($has_next): ?>
+                    <a href="<?= e(url('/outstanding?page=' . (string) ($page + 1))) ?>"><?= e(t('next')) ?></a>
+                <?php endif; ?>
+            </nav>
+        <?php endif; ?>
     </section>
 <?php endif; ?>
