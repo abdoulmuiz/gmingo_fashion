@@ -146,14 +146,33 @@ check($fitting !== null && $fitting['orders'] !== [], 'the board groups the orde
 check_eq($fitting['orders'][0]['order_number'], $order['order_number'], 'the board card shows the order number');
 check_eq($fitting['orders'][0]['customer_name'], 'Amina Bello', 'the board card shows the customer');
 check_eq($fitting['orders'][0]['due_date'], date('Y-m-d', strtotime('+5 days')), 'the board card shows the due date');
-check($fitting['orders'][0]['assigned_name'] === null, 'an order with nobody assigned stays unassigned');
+check($fitting['orders'][0]['assigned_name'] === null, 'an order with nobody assigned has no name');
 $_SERVER['REQUEST_URI'] = base_path() . '/board';
 ob_start();
 board_show();
 $boardHtml = (string) ob_get_clean();
 check(str_contains($boardHtml, $order['order_number']), 'the board page shows the order number');
 check(str_contains($boardHtml, 'Amina Bello'), 'the board page shows the customer');
-check(str_contains($boardHtml, t('unassigned')), 'the board page shows when nobody is assigned');
+check(!str_contains($boardHtml, t('unassigned')), 'an order with nobody assigned does not say Unassigned');
+check(!str_contains($boardHtml, '<p class="meta">Amina Bello</p>'), 'an order with nobody assigned omits the name');
+
+db_update('fashion_orders', ['assigned_user_id' => (string) $shop['user_id']], ['id' => $order['id']]);
+$assignedBoard = stage_board();
+$assignedFitting = null;
+foreach ($assignedBoard['groups'] as $group) {
+    if ($group['name'] === 'Fitting') {
+        $assignedFitting = $group;
+    }
+}
+check(
+    $assignedFitting !== null && $assignedFitting['orders'][0]['assigned_name'] === 'Amina Bello',
+    'the board shows the assigned person'
+);
+ob_start();
+board_show();
+$assignedHtml = (string) ob_get_clean();
+check(str_contains($assignedHtml, '<p class="meta">Amina Bello</p>'), 'the board page shows the assigned name');
+check(!str_contains($assignedHtml, t('unassigned')), 'an assigned order does not say Unassigned');
 
 $newStage = db_select('fashion_stage_definitions', ['code' => 'new'])[0];
 stage_rename((string) $newStage['id'], 'Fresh');

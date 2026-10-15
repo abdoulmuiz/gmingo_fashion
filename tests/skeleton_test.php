@@ -111,3 +111,38 @@ check(is_dir(dirname(__DIR__) . '/app/fashion/controllers'), 'fashion controller
 check(is_dir(dirname(__DIR__) . '/app/fashion/views'), 'fashion views folder exists');
 check(is_dir(dirname(__DIR__) . '/storage/logs'), 'log folder exists');
 check(is_file(dirname(__DIR__) . '/storage/logs/.gitkeep'), 'log folder is tracked empty');
+
+$rules = (string) file_get_contents(dirname(__DIR__) . '/.cursor/rules/fashion.mdc');
+check(
+    str_contains($rules, 'Read-only GET filter forms do not need CSRF; every form that changes data does.'),
+    'read-only GET filter forms do not need CSRF'
+);
+$getFilters = 0;
+$writers = 0;
+$viewRoot = dirname(__DIR__) . '/app/fashion/views';
+$viewFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($viewRoot));
+foreach ($viewFiles as $viewFile) {
+    if (!$viewFile->isFile() || $viewFile->getExtension() !== 'php') {
+        continue;
+    }
+    $source = (string) file_get_contents($viewFile->getPathname());
+    if (!preg_match_all('/<form\b([^>]*)>(.*?)<\/form>/is', $source, $forms, PREG_SET_ORDER)) {
+        continue;
+    }
+    $relative = substr($viewFile->getPathname(), strlen($viewRoot) + 1);
+    foreach ($forms as $form) {
+        $method = 'get';
+        if (preg_match('/\bmethod\s*=\s*([\'"])(.*?)\1/i', $form[1], $methodMatch)) {
+            $method = strtolower($methodMatch[2]);
+        }
+        $hasCsrf = str_contains($form[2], 'csrf_field()') || str_contains($form[2], 'name="csrf"');
+        if ($method === 'get') {
+            $getFilters++;
+            continue;
+        }
+        $writers++;
+        check($hasCsrf, $relative . ' form that changes data has a CSRF field');
+    }
+}
+check($getFilters > 0, 'a read-only GET filter form is allowed without CSRF');
+check($writers > 0, 'forms that change data are still checked for CSRF');

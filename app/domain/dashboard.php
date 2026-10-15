@@ -60,9 +60,6 @@ function dashboard_home(?int $hour = null): array
     if (module_enabled('fashion.finance')) {
         $cards[] = dashboard_card('card_money', money((int) payment_outstanding()['total_kobo']));
     }
-    if (module_enabled('fashion.inventory')) {
-        $cards[] = dashboard_card('card_low_stock', '0', t('inventory_later'));
-    }
     return [
         'greeting' => dashboard_greeting($hour),
         'cards' => $cards,

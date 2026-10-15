@@ -17,7 +17,9 @@
                     <span><?= e($order['customer_name']) ?></span>
                     <span><?= e($order['due_date']) ?></span>
                 </a>
-                <p class="meta"><?= e($order['assigned_name'] ?? t('unassigned')) ?></p>
+                <?php if ($order['assigned_name'] !== null): ?>
+                    <p class="meta"><?= e($order['assigned_name']) ?></p>
+                <?php endif; ?>
             <?php endforeach; ?>
         </section>
     <?php endforeach; ?>
