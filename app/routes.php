@@ -39,7 +39,7 @@ route('POST', '/logout', function (): void {
     logout_submit();
 });
 
-route('POST', '/lang', function (): void {
+route('POST', '/language', function (): void {
     lang_submit();
 });
 

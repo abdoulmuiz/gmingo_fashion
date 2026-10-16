@@ -14,9 +14,9 @@
         <button class="btn" type="submit"><?= e(t('login')) ?></button>
     </form>
     <p><a href="<?= e(url('/register')) ?>"><?= e(t('need_account')) ?></a></p>
-    <form method="post" action="<?= e(url('/lang')) ?>">
+    <form method="post" action="<?= e(url('/language')) ?>">
         <?= csrf_field() ?>
-        <input type="hidden" name="back" value="/login">
+        <input type="hidden" name="back" value="<?= e(request_path()) ?>">
         <label><?= e(t('language')) ?>
             <select name="lang">
                 <option value="en" <?= current_lang() === 'en' ? 'selected' : '' ?>><?= e(t('english')) ?></option>

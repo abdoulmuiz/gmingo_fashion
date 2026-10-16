@@ -1,9 +1,9 @@
 <section class="card">
     <h1><?= e(t('more')) ?></h1>
     <p><a href="<?= e(url('/settings')) ?>"><?= e(t('settings')) ?></a></p>
-    <form method="post" action="<?= e(url('/lang')) ?>">
+    <form method="post" action="<?= e(url('/language')) ?>">
         <?= csrf_field() ?>
-        <input type="hidden" name="back" value="/more">
+        <input type="hidden" name="back" value="<?= e(request_path()) ?>">
         <label><?= e(t('language')) ?>
             <select name="lang">
                 <option value="en" <?= current_lang() === 'en' ? 'selected' : '' ?>><?= e(t('english')) ?></option>
