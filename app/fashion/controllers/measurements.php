@@ -15,10 +15,15 @@ function measurement_submit(string $customerId): void
     if (!is_array($values)) {
         $values = [];
     }
-    if (!in_array($action, ['take', 'update'], true)) {
+    $others = $_POST['others'] ?? [];
+    if (!is_array($others)) {
+        $others = [];
+    }
+    $others = measurement_other_rows($others);
+    if (!in_array($action, ['new', 'take', 'update'], true)) {
         flash_set('error', t('required'));
     } else {
-        $result = measurement_save($customerId, $garmentId, (string) ($_POST['unit'] ?? ''), $values);
+        $result = measurement_save($customerId, $garmentId, (string) ($_POST['unit'] ?? ''), $values, $others);
         if (isset($result['error'])) {
             flash_set('error', t((string) $result['error']));
         } else {

@@ -56,6 +56,6 @@ function customers_show(string $id): void
     render('customers/show', [
         'title' => $profile['name'],
         'customer' => $profile,
-        'measure' => module_enabled('fashion.measurements') ? measurement_profile($id, (string) ($_GET['garment'] ?? '')) : null,
+        'measure' => module_enabled('fashion.measurements') ? measurement_profile($id, (string) ($_GET['garment'] ?? ''), (string) ($_GET['from'] ?? '')) : null,
     ]);
 }

@@ -23,7 +23,23 @@ function measurement_active_fields(string $garmentId): array
     return $rows;
 }
 
-function measurement_save(string $customerId, string $garmentId, string $unit, array $values): array
+function measurement_other_rows(array $others): array
+{
+    if (isset($others['label']) && is_array($others['label'])) {
+        $rows = [];
+        $values = is_array($others['value'] ?? null) ? $others['value'] : [];
+        foreach ($others['label'] as $index => $label) {
+            $rows[] = [
+                'label' => $label,
+                'value' => $values[$index] ?? '',
+            ];
+        }
+        return $rows;
+    }
+    return $others;
+}
+
+function measurement_save(string $customerId, string $garmentId, string $unit, array $values, array $others = []): array
 {
     require_module('fashion.measurements');
     if (!is_uuid($customerId) || db_select('fashion_customers', ['id' => $customerId]) === []) {
@@ -56,6 +72,23 @@ function measurement_save(string $customerId, string $garmentId, string $unit, a
         }
         $stored[$key] = $clean;
     }
+    foreach ($others as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $label = trim((string) ($row['label'] ?? ''));
+        $amount = trim((string) ($row['value'] ?? ''));
+        if ($label === '' || $amount === '') {
+            continue;
+        }
+        if (strlen($label) > 40 || preg_match('/[\r\n:]/', $label) === 1) {
+            return ['error' => 'required'];
+        }
+        if (!preg_match('/^\d{1,4}(\.\d{1,2})?$/', $amount)) {
+            return ['error' => 'invalid_measurement'];
+        }
+        $stored['other:' . $label] = $amount;
+    }
     if ($stored === []) {
         return ['error' => 'invalid_measurement'];
     }
@@ -74,7 +107,7 @@ function measurement_save(string $customerId, string $garmentId, string $unit, a
     return ['id' => $id];
 }
 
-function measurement_profile(string $customerId, string $garmentId): array
+function measurement_profile(string $customerId, string $garmentId, string $fromId = ''): array
 {
     require_module('fashion.measurements');
     $garments = [];
@@ -106,7 +139,24 @@ function measurement_profile(string $customerId, string $garmentId): array
         }
     }
     $prefill = ['unit' => 'inches', 'values' => []];
-    if ($selected !== null) {
+    $formOpen = false;
+    if ($fromId !== '' && is_uuid($fromId)) {
+        foreach ($versions as $version) {
+            if ($version['id'] !== $fromId) {
+                continue;
+            }
+            foreach ($garments as $garment) {
+                if ((string) $garment['id'] === $version['garment_id']) {
+                    $selected = $garment;
+                    break;
+                }
+            }
+            $prefill = ['unit' => $version['unit'], 'values' => $version['values']];
+            $formOpen = true;
+            break;
+        }
+    }
+    if (!$formOpen && $selected !== null) {
         foreach ($latest as $version) {
             if ($version['garment_id'] === (string) $selected['id']) {
                 $prefill = ['unit' => $version['unit'], 'values' => $version['values']];
@@ -119,6 +169,8 @@ function measurement_profile(string $customerId, string $garmentId): array
         $choices[] = [
             'id' => (string) $garment['id'],
             'name' => (string) $garment['name'],
+            'placeholder' => (int) $garment['placeholder'] === 1,
+            'fields' => measurement_active_fields((string) $garment['id']),
         ];
     }
     return [
@@ -127,6 +179,7 @@ function measurement_profile(string $customerId, string $garmentId): array
         'placeholder' => $selected !== null && (int) $selected['placeholder'] === 1,
         'fields' => $selected === null ? [] : measurement_active_fields((string) $selected['id']),
         'prefill' => $prefill,
+        'form_open' => $formOpen,
         'latest' => $latest,
         'history' => $history,
     ];
@@ -146,6 +199,10 @@ function measurement_versions(string $customerId): array
         $labels[$garmentId][(string) $field['field_key']] = (string) $field['name'];
         $order[$garmentId][(string) $field['field_key']] = (int) $field['sort_order'];
     }
+    $people = [];
+    foreach (db_select('fashion_users', [], ['limit' => 100]) as $user) {
+        $people[(string) $user['id']] = (string) $user['name'];
+    }
     $versions = [];
     $rows = db_select('fashion_measurements', ['customer_id' => $customerId], ['order' => 'seq DESC', 'limit' => 100]);
     foreach ($rows as $row) {
@@ -161,9 +218,13 @@ function measurement_versions(string $customerId): array
         }
         $lines = [];
         foreach ($values as $key => $value) {
+            $name = $labels[$garmentId][$key] ?? $key;
+            if (str_starts_with($key, 'other:')) {
+                $name = substr($key, 6);
+            }
             $lines[] = [
                 'key' => $key,
-                'name' => $labels[$garmentId][$key] ?? $key,
+                'name' => $name,
                 'value' => $value,
                 'sort' => $order[$garmentId][$key] ?? 1000,
             ];
@@ -177,6 +238,7 @@ function measurement_versions(string $customerId): array
             'garment_name' => $names[$garmentId] ?? '',
             'unit' => (string) $row['unit'],
             'created_at' => (string) $row['created_at'],
+            'taken_by' => $people[(string) $row['created_by']] ?? '',
             'values' => $values,
             'lines' => $lines,
         ];

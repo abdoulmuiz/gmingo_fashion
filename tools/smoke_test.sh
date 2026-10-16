@@ -199,4 +199,51 @@ if ! grep -F -q "$HAUSA" "$tmpdir/final.html"; then
     fail "page after switching to Hausa did not contain ${HAUSA}" "status ${final_code} from ${follow_url}"$'\n'"$(head -c 500 "$tmpdir/final.html")"
 fi
 echo "OK Hausa (${HAUSA}) after POST ${action} -> ${location}"
+
+expect_open "/settings/garments"
+
+NEW_MEASURE="$("$PHP_BIN" -r ' $en = require $argv[1]; echo $en["new_measurement"];' "$ROOT/lang/en.php")"
+GARMENT_HEADING="$("$PHP_BIN" -r ' $en = require $argv[1]; echo $en["garment_settings"];' "$ROOT/lang/en.php")"
+
+login_page="$(curl -sS --connect-timeout 5 --max-time 15 -c "$jar" -b "$jar" "${ORIGIN}${BASE_PATH}/login")"
+login_token="$(printf '%s' "$login_page" | "$PHP_BIN" -r ' $html = stream_get_contents(STDIN); if (!preg_match("#name=\"csrf\" value=\"([^\"]+)\"#", $html, $m)) { fwrite(STDERR, "login form has no CSRF field\n"); exit(1); } echo $m[1];')" || fail "could not read the login form"
+login_post="$(curl -sS --connect-timeout 5 --max-time 20 -D "$tmpdir/login.hdr" -c "$jar" -b "$jar" -o "$tmpdir/login-post.html" -w '%{http_code}' \
+    -X POST \
+    --data-urlencode "csrf=${login_token}" \
+    --data-urlencode "email=demo@gmingo.test" \
+    --data-urlencode "password=password" \
+    "${ORIGIN}${BASE_PATH}/login" || true)"
+case "$login_post" in
+    301|302|303) ;;
+    *)
+        fail "demo shop login should redirect" "status ${login_post}"$'\n'"$(head -c 400 "$tmpdir/login-post.html")"
+        ;;
+esac
+
+customers_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/customers.html" -w '%{http_code}' "${ORIGIN}${BASE_PATH}/customers" || true)"
+if [[ "$customers_code" != "200" ]]; then
+    fail "the customer list did not open after login" "status ${customers_code}"
+fi
+customer_path="$(grep -oE "${BASE_PATH}/customers/[0-9a-f-]{36}" "$tmpdir/customers.html" | head -n 1 || true)"
+if [[ -z "$customer_path" ]]; then
+    fail "the demo shop has no customer to open" "$(head -c 300 "$tmpdir/customers.html")"
+fi
+measure_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/measure.html" -w '%{http_code}' "${ORIGIN}${customer_path}" || true)"
+if [[ "$measure_code" != "200" ]]; then
+    fail "the customer page did not open" "status ${measure_code} ${customer_path}"
+fi
+if ! grep -F -q "$NEW_MEASURE" "$tmpdir/measure.html"; then
+    fail "the customer page is missing New measurement" "$(head -c 400 "$tmpdir/measure.html")"
+fi
+echo "OK ${measure_code} ${ORIGIN}${customer_path} contains ${NEW_MEASURE}"
+
+garments_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/garments.html" -w '%{http_code}' "${ORIGIN}${BASE_PATH}/settings/garments" || true)"
+if [[ "$garments_code" != "200" ]]; then
+    fail "garment settings did not open" "status ${garments_code}"
+fi
+if ! grep -F -q "$GARMENT_HEADING" "$tmpdir/garments.html"; then
+    fail "garment settings is missing its heading" "$(head -c 400 "$tmpdir/garments.html")"
+fi
+echo "OK ${garments_code} ${ORIGIN}${BASE_PATH}/settings/garments contains ${GARMENT_HEADING}"
+
 echo "Smoke test passed"

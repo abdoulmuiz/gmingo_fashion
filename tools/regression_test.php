@@ -562,8 +562,8 @@ final class RegressionRun
             $this->url('/customers/' . $this->customerId),
             'English measurement section',
             $page['body'],
-            ['measurements', 'take_measurement', 'update_measurement', 'unit', 'inches', 'cm', 'no_measurements'],
-            ['name="values[neck]"', 'name="unit"', 'name="action" value="take"', 'name="action" value="update"']
+            ['measurements', 'new_measurement', 'measure_keeps_old', 'add_other', 'clear_all', 'unit', 'inches', 'cm'],
+            ['name="values[neck]"', 'name="unit"', 'name="action" value="new"']
         );
         $garmentId = $this->idFrom($page['body'], '#name="garment_id" value="([0-9a-f-]{36})"#');
         $first = $this->submit('/customers/' . $this->customerId . '/measurements', [
@@ -583,7 +583,7 @@ final class RegressionRun
         $both = str_contains($second['body'], '41.5') && str_contains($second['body'], '16')
             && str_contains($second['body'], (string) $this->english['cm'])
             && str_contains($second['body'], (string) $this->english['inches'])
-            && str_contains($second['body'], (string) $this->english['history']);
+            && str_contains($second['body'], (string) $this->english['view_old_measurements']);
         $this->add(
             $this->url('/customers/' . $this->customerId),
             'two measurement versions keep their units',
@@ -596,8 +596,8 @@ final class RegressionRun
             $this->url('/customers/' . $this->customerId),
             'Hausa measurement section',
             $this->request('GET', '/customers/' . $this->customerId)['body'],
-            ['measurements', 'take_measurement', 'update_measurement', 'history', 'unit'],
-            ['name="unit"', 'value="take"', 'value="update"'],
+            ['measurements', 'new_measurement', 'view_old_measurements', 'unit'],
+            ['name="unit"', 'value="new"'],
             'ha'
         );
         $this->switchLanguage('en');

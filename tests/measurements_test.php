@@ -111,11 +111,29 @@ $_SERVER['REQUEST_URI'] = base_path() . '/customers/' . $customer['id'];
 ob_start();
 customers_show($customer['id']);
 $open = (string) ob_get_clean();
-check(str_contains($open, t('take_measurement')), 'the profile has Take new measurement');
-check(str_contains($open, t('update_measurement')), 'the profile has Update measurement');
+check(str_contains($open, t('new_measurement')), 'the profile has New measurement');
+check(str_contains($open, 'name="action" value="new"'), 'New measurement saves a new version');
+check(!str_contains($open, 'name="action" value="take"') && !str_contains($open, 'name="action" value="update"'), 'the two old measurement buttons are one button');
+check(str_contains($open, t('measure_keeps_old')), 'the form says old measurements are kept');
+check(str_contains($open, t('view_old_measurements')), 'each garment can open its old measurements');
+check(str_contains($open, '<details class="old-measures">'), 'old measurements are closed until the button is used');
+check(!str_contains($open, '<details class="old-measures" open'), 'old measurements are hidden by default');
+check(str_contains($open, t('use_as_start')), 'an old version can be used as a starting point');
+check(str_contains($open, t('add_other')), 'the form can add one other field');
+check(str_contains($open, t('clear_all')), 'the form can clear every box');
+check(str_contains($open, t('clear_other_fields')), 'the form can clear the other fields');
+check(str_contains($open, 'value="42"'), 'New measurement starts from the latest values');
+check(str_contains($open, 'Amina Bello'), 'a measurement shows who took it');
 check(str_contains($open, 'neck'), 'the profile shows this shop kaftan fields');
 check(str_contains($open, '41.5'), 'the profile shows the latest measurement');
-check(str_contains($open, '>16<'), 'the profile history still shows the first measurement');
+check(str_contains($open, '>16<'), 'the history still contains the first measurement');
+$_GET['from'] = $first['id'];
+ob_start();
+customers_show($customer['id']);
+$fromOld = (string) ob_get_clean();
+check(str_contains($fromOld, '<details class="new-measure" open'), 'Use as starting point opens the form');
+check(str_contains($fromOld, 'value="16"'), 'Use as starting point fills the old values');
+unset($_GET['from']);
 
 $ourField = db_select('fashion_measurement_fields', ['garment_type_id' => $kaftan['id'], 'field_key' => 'neck'])[0];
 field_rename((string) $ourField['id'], 'neck opening');
@@ -129,6 +147,22 @@ check(str_contains((string) db_select('fashion_measurements', ['id' => $withCap[
 field_set_active((string) $added[0]['id'], false);
 $withoutCap = measurement_save($customer['id'], $kaftan['id'], 'inches', ['neck' => '17', 'cap_height' => '23']);
 check(!str_contains((string) db_select('fashion_measurements', ['id' => $withoutCap['id']])[0]['values_json'], 'cap_height'), 'an inactive field is skipped');
+$withOther = measurement_save($customer['id'], $kaftan['id'], 'inches', ['neck' => '18'], [
+    ['label' => '', 'value' => ''],
+    ['label' => 'Thigh', 'value' => '22'],
+    ['label' => '', 'value' => '9'],
+]);
+check(isset($withOther['id']), 'a measurement with an other field is saved');
+$otherJson = (string) db_select('fashion_measurements', ['id' => $withOther['id']])[0]['values_json'];
+check(str_contains($otherJson, '"other:Thigh":"22"'), 'an other field is stored on the new version');
+check(substr_count($otherJson, 'other:') === 1, 'blank extra rows are ignored');
+$paired = measurement_other_rows([
+    'label' => ['', 'Cuff note'],
+    'value' => ['4', ''],
+]);
+$ignored = measurement_save($customer['id'], $kaftan['id'], 'inches', ['neck' => '18'], $paired);
+check(isset($ignored['id']), 'blank paired rows still save the real fields');
+check(!str_contains((string) db_select('fashion_measurements', ['id' => $ignored['id']])[0]['values_json'], 'other:'), 'a blank label or value is ignored');
 
 $other = business_register([
     'business_name' => 'Other Measure Shop',
@@ -162,7 +196,7 @@ check(db_select('fashion_measurements', ['customer_id' => $customer['id']]) === 
 
 auth_login((string) $shop['user_id'], (string) $shop['tenant_id']);
 check_eq(db_select('fashion_measurement_fields', ['id' => $ourField['id']])[0]['name'], 'neck opening', 'the field name stays after the other shop');
-check_eq(count(db_select('fashion_measurements', ['customer_id' => $customer['id']])), 6, 'the other shop did not add a version');
+check_eq(count(db_select('fashion_measurements', ['customer_id' => $customer['id']])), 8, 'the other shop did not add a version');
 
 module_save([
     'fashion.orders',
@@ -194,5 +228,5 @@ ob_start();
 customers_show($customer['id']);
 $plain = (string) ob_get_clean();
 check(!str_contains($plain, t('measurements')), 'the measurement section leaves the profile');
-check(!str_contains($plain, t('take_measurement')), 'Take new measurement leaves the profile');
+check(!str_contains($plain, t('new_measurement')), 'New measurement leaves the profile');
 check(str_contains($plain, 'Hauwa Sani'), 'the customer profile still opens');
