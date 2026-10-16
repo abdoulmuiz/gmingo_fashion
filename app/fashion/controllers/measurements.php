@@ -43,12 +43,36 @@ function garments_form(): void
     owner_only();
     $garments = [];
     foreach (garment_rows() as $garment) {
-        $garment['fields'] = field_rows((string) $garment['id']);
+        $garment['measurement_count'] = garment_measurement_count((string) $garment['id']);
         $garments[] = $garment;
     }
     render('garments', [
         'title' => t('garment_settings'),
         'garments' => $garments,
+    ]);
+}
+
+function garments_editor(string $id): void
+{
+    require_module('fashion.measurements');
+    owner_only();
+    if (!is_uuid($id)) {
+        http_response_code(404);
+        render('simple', ['title' => t('not_found'), 'body' => t('not_found_body')]);
+        return;
+    }
+    $rows = db_select('fashion_garment_types', ['id' => $id]);
+    if ($rows === []) {
+        http_response_code(404);
+        render('simple', ['title' => t('not_found'), 'body' => t('not_found_body')]);
+        return;
+    }
+    $garment = $rows[0];
+    $garment['measurement_count'] = garment_measurement_count($id);
+    render('garment_fields', [
+        'title' => (string) $garment['name'],
+        'garment' => $garment,
+        'fields' => field_rows($id),
     ]);
 }
 
@@ -72,8 +96,13 @@ function garments_submit(): void
         garment_set_active($id, false);
     } elseif ($action === 'garment_activate') {
         garment_set_active($id, true);
+    } elseif ($action === 'garment_remove') {
+        $result = garment_remove($id);
+        $garmentId = '';
     } elseif ($action === 'field_add') {
-        $result = field_add($garmentId, $name);
+        $result = field_add($garmentId, $name, (string) ($_POST['unit'] ?? ''));
+    } elseif ($action === 'field_save') {
+        $result = field_save($id, $name, (string) ($_POST['unit'] ?? ''));
     } elseif ($action === 'field_rename') {
         $result = field_rename($id, $name);
     } elseif ($action === 'field_up' || $action === 'field_down') {
@@ -82,11 +111,20 @@ function garments_submit(): void
         field_set_active($id, false);
     } elseif ($action === 'field_activate') {
         field_set_active($id, true);
+    } elseif ($action === 'field_remove') {
+        $result = field_remove($id);
+    } elseif ($action === 'field_order') {
+        $ids = $_POST['ids'] ?? [];
+        field_order($garmentId, is_array($ids) ? $ids : []);
     }
     if (isset($result['error'])) {
         flash_set('error', t((string) $result['error']));
     } else {
         flash_set('success', t('saved'));
     }
-    redirect('/settings/garments');
+    $back = '/settings/garments';
+    if (is_uuid($garmentId) && $action !== 'garment_remove') {
+        $back .= '/' . $garmentId;
+    }
+    redirect($back);
 }

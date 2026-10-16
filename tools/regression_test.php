@@ -613,8 +613,8 @@ final class RegressionRun
             $this->url('/settings/garments'),
             'English garment settings',
             $garments['body'],
-            ['garment_settings', 'add_garment', 'add_field', 'move_up', 'move_down', 'deactivate', 'save', 'placeholder_note'],
-            ['name="action" value="garment_add"', 'name="action" value="field_add"', 'name="action" value="garment_rename"', 'name="action" value="field_rename"']
+            ['garment_settings', 'add_garment', 'move_up', 'move_down', 'placeholder_note'],
+            ['name="action" value="garment_add"', 'class="garment-card"']
         );
         $kaftan = $this->idNear($garments['body'], 'Kaftan');
         $addedGarment = $this->submit('/settings/garments', [
@@ -631,7 +631,7 @@ final class RegressionRun
         ]);
         $this->add($this->url('/settings/garments'), 'add a measurement field', $kaftan !== '' && str_contains($field['body'], 'ZZ cuff'), 'ZZ cuff', $kaftan === '' ? 'Kaftan id was not on the page' : $this->snippet($field['body']));
         $this->switchLanguage('ha');
-        $this->fields($this->url('/settings/garments'), 'Hausa garment settings', $this->request('GET', '/settings/garments')['body'], ['garment_settings', 'add_garment', 'add_field', 'move_up'], ['value="garment_add"'], 'ha');
+        $this->fields($this->url('/settings/garments'), 'Hausa garment settings', $this->request('GET', '/settings/garments')['body'], ['garment_settings', 'add_garment', 'move_up'], ['value="garment_add"', 'class="garment-card"'], 'ha');
         $this->switchLanguage('en');
 
         $settings = $this->request('GET', '/settings');
@@ -921,6 +921,9 @@ final class RegressionRun
             return '';
         }
         $chunk = substr($html, max(0, $position - 800), 800);
+        if (preg_match('#/settings/garments/([0-9a-f-]{36})#', $chunk, $found) === 1) {
+            return (string) $found[1];
+        }
         if (preg_match_all('#name="id" value="([0-9a-f-]{36})"#i', $chunk, $match) && $match[1] !== []) {
             return (string) end($match[1]);
         }

@@ -11,7 +11,7 @@ $again = schema_migrate();
 $after = tests_table_count($main);
 
 check(str_ends_with((string) db()->query('SELECT DATABASE()')->fetchColumn(), '_test'), 'migration connects to the test database');
-$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql'];
+$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql', '007_field_unit.sql'];
 foreach ($applied as $file) {
     check(in_array($file, $knownMigrations, true), $file . ' is a fashion migration');
 }
@@ -75,6 +75,13 @@ $reverse = db()->prepare(
 $reverse->execute(['table_name' => 'fashion_payments', 'column_name' => 'reverses_payment_id']);
 $reverseRow = $reverse->fetch();
 check(is_array($reverseRow) && $reverseRow['IS_NULLABLE'] === 'YES', 'payments can point at the row they reverse');
+
+$unitColumn = db()->prepare(
+    'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+);
+$unitColumn->execute(['table_name' => 'fashion_measurement_fields', 'column_name' => 'unit']);
+$unitColumnRow = $unitColumn->fetch();
+check(is_array($unitColumnRow) && $unitColumnRow['DATA_TYPE'] === 'varchar' && (int) $unitColumnRow['CHARACTER_MAXIMUM_LENGTH'] === 20 && $unitColumnRow['IS_NULLABLE'] === 'NO', 'a measurement field can store a unit');
 
 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__) . '/app'));
 foreach ($iterator as $file) {

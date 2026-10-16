@@ -308,3 +308,73 @@ summary.btn::marker { content: ""; }
     min-height: 44px;
 }
 
+.garment-cards { display: grid; gap: 12px; }
+
+.garment-card-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.garment-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 72px;
+    padding: 18px 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card, #fff);
+    text-decoration: none;
+    font-size: 1.15rem;
+}
+
+.field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    margin: 12px 0;
+}
+
+.drag-handle {
+    touch-action: none;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: transparent;
+    font-size: 1.2rem;
+    cursor: grab;
+}
+
+.field-row.dragging { opacity: 0.55; }
+
+.field-bin {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: var(--danger);
+    color: #fff;
+    font-weight: 700;
+}
+
+.field-bin[hidden] { display: none; }
+
+.undo-bar {
+    position: sticky;
+    bottom: 88px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+}
+

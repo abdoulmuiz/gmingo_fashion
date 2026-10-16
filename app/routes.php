@@ -155,6 +155,10 @@ route('GET', '/settings/garments', function (): void {
     garments_form();
 });
 
+route('GET', '/settings/garments/{id}', function (array $params): void {
+    garments_editor((string) $params['id']);
+});
+
 route('POST', '/settings/garments', function (): void {
     garments_submit();
 });

@@ -125,7 +125,7 @@
                             <input type="hidden" name="garment_id" value="<?= e($garment['id']) ?>">
                             <p class="meta"><?= e(t('measure_keeps_old')) ?></p>
                             <?php foreach ($cardFields as $field): ?>
-                                <label><?= e((string) $field['name']) ?>
+                                <label><?= e((string) $field['name'] . ((string) ($field['unit'] ?? '') !== '' ? ' (' . (string) $field['unit'] . ')' : '')) ?>
                                     <input name="values[<?= e((string) $field['field_key']) ?>]" inputmode="decimal" value="<?= e((string) ($cardPrefill['values'][(string) $field['field_key']] ?? '')) ?>">
                                 </label>
                             <?php endforeach; ?>

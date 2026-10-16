@@ -193,10 +193,73 @@ $theirCustomer = customer_create([
 $theirSave = measurement_save($theirCustomer['id'], $otherKaftan['id'], 'cm', ['neck' => '40']);
 check(isset($theirSave['id']), 'a shop saves against its own garment');
 check(db_select('fashion_measurements', ['customer_id' => $customer['id']]) === [], 'a shop cannot read another customer measurement');
+$blockedRemove = garment_remove($kaftan['id']);
+check(isset($blockedRemove['error']), 'another shop cannot delete this garment');
 
 auth_login((string) $shop['user_id'], (string) $shop['tenant_id']);
 check_eq(db_select('fashion_measurement_fields', ['id' => $ourField['id']])[0]['name'], 'neck opening', 'the field name stays after the other shop');
 check_eq(count(db_select('fashion_measurements', ['customer_id' => $customer['id']])), 8, 'the other shop did not add a version');
+
+$fresh = garment_add('Unused wrap');
+$freshRows = db_select('fashion_garment_types', ['name' => 'Unused wrap']);
+check(count($freshRows) === 1, 'a garment type can be added');
+$freshId = (string) $freshRows[0]['id'];
+ob_start();
+garments_editor($freshId);
+$unusedEditor = (string) ob_get_clean();
+check(str_contains($unusedEditor, t('garment_delete_confirm')), 'the confirmation says an unused garment is deleted');
+$removed = garment_remove($freshId);
+check(!empty($removed['deleted']), 'a garment with no measurements is deleted');
+check(db_select('fashion_garment_types', ['id' => $freshId]) === [], 'the unused garment is gone');
+
+garment_add('Used wrap');
+$usedId = (string) db_select('fashion_garment_types', ['name' => 'Used wrap'])[0]['id'];
+field_add($usedId, 'Across', 'cm');
+$across = db_select('fashion_measurement_fields', ['garment_type_id' => $usedId, 'field_key' => 'across'])[0];
+$usedSave = measurement_save($customer['id'], $usedId, 'inches', ['across' => '20']);
+check(isset($usedSave['id']), 'a measurement can be saved on a new garment');
+$archivedGarment = garment_remove($usedId);
+check(!empty($archivedGarment['archived']), 'a garment with measurements is archived');
+check((int) db_select('fashion_garment_types', ['id' => $usedId])[0]['active'] === 0, 'an archived garment is hidden from new forms');
+check(count(db_select('fashion_measurements', ['garment_type_id' => $usedId])) === 1, 'archiving a garment keeps its measurements');
+
+$spareRow = db_select('fashion_measurement_fields', ['garment_type_id' => $kaftan['id'], 'field_key' => 'spare_point']);
+field_add($kaftan['id'], 'Spare point');
+$spareRow = db_select('fashion_measurement_fields', ['garment_type_id' => $kaftan['id'], 'field_key' => 'spare_point'])[0];
+$spareGone = field_remove((string) $spareRow['id']);
+check(!empty($spareGone['deleted']), 'a field with no saved values is deleted');
+check(db_select('fashion_measurement_fields', ['id' => $spareRow['id']]) === [], 'the unused field row is gone');
+$acrossGone = field_remove((string) $across['id']);
+check(!empty($acrossGone['archived']), 'a field with saved values is archived');
+check((int) db_select('fashion_measurement_fields', ['id' => $across['id']])[0]['active'] === 0, 'the archived field stays in the table');
+check(str_contains((string) db_select('fashion_measurements', ['id' => $usedSave['id']])[0]['values_json'], '"across":"20"'), 'old measurement values stay after the field is archived');
+
+$orderBefore = array_column(field_rows($kaftan['id']), 'id');
+field_reorder($kaftan['id'], (string) $orderBefore[1], 'up');
+$orderAfter = array_column(field_rows($kaftan['id']), 'id');
+check_eq($orderAfter[0], $orderBefore[1], 'moving a field up saves the new order without JavaScript');
+field_order($kaftan['id'], array_reverse($orderAfter));
+$orderReversed = array_column(field_rows($kaftan['id']), 'id');
+check_eq($orderReversed, array_reverse($orderAfter), 'a posted field order is saved');
+
+$_SERVER['REQUEST_URI'] = base_path() . '/settings/garments';
+ob_start();
+garments_form();
+$garmentPage = (string) ob_get_clean();
+check(str_contains($garmentPage, 'class="garment-card"'), 'garment types are tappable cards');
+check(str_contains($garmentPage, t('add_garment')), 'the settings page can add a garment type');
+check(str_contains($garmentPage, url('/settings/garments/' . $kaftan['id'])), 'a card opens that garment');
+ob_start();
+garments_editor($kaftan['id']);
+$editorPage = (string) ob_get_clean();
+check(str_contains($editorPage, 'data-drag-handle'), 'each field has a drag handle');
+check(str_contains($editorPage, t('drag_hint')), 'the editor explains drag, the corner bin, and the remove button');
+check(str_contains($editorPage, t('move_up')) && str_contains($editorPage, t('move_down')), 'each field can move up and down without dragging');
+check(str_contains($editorPage, 'name="unit"'), 'a field has a unit');
+check(str_contains($editorPage, t('add_field')), 'the editor can add a field');
+check(str_contains($editorPage, t('field_removed')), 'removing a field offers undo');
+check(str_contains($editorPage, 'data-field-bin'), 'dragging shows a delete drop zone');
+check(str_contains($editorPage, t('garment_archive_confirm')), 'the confirmation says a used garment is archived');
 
 module_save([
     'fashion.orders',

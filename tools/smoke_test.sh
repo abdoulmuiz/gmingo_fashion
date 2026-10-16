@@ -245,5 +245,21 @@ if ! grep -F -q "$GARMENT_HEADING" "$tmpdir/garments.html"; then
     fail "garment settings is missing its heading" "$(head -c 400 "$tmpdir/garments.html")"
 fi
 echo "OK ${garments_code} ${ORIGIN}${BASE_PATH}/settings/garments contains ${GARMENT_HEADING}"
+if ! grep -F -q 'class="garment-card"' "$tmpdir/garments.html"; then
+    fail "garment settings is missing a tappable card" "$(head -c 400 "$tmpdir/garments.html")"
+fi
+editor_path="$(grep -oE "${BASE_PATH}/settings/garments/[0-9a-f-]{36}" "$tmpdir/garments.html" | head -n 1 || true)"
+if [[ -z "$editor_path" ]]; then
+    fail "garment settings has no field editor link" "$(head -c 300 "$tmpdir/garments.html")"
+fi
+ADD_FIELD="$("$PHP_BIN" -r ' $en = require $argv[1]; echo $en["add_field"];' "$ROOT/lang/en.php")"
+editor_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/editor.html" -w '%{http_code}' "${ORIGIN}${editor_path}" || true)"
+if [[ "$editor_code" != "200" ]]; then
+    fail "the field editor did not open" "status ${editor_code} ${editor_path}"
+fi
+if ! grep -F -q "$ADD_FIELD" "$tmpdir/editor.html"; then
+    fail "the field editor is missing Add field" "$(head -c 400 "$tmpdir/editor.html")"
+fi
+echo "OK ${editor_code} ${ORIGIN}${editor_path} contains ${ADD_FIELD}"
 
 echo "Smoke test passed"

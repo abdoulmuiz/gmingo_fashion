@@ -318,11 +318,12 @@ function field_reorder(string $garmentId, string $id, string $direction): void
     measurement_reorder('fashion_measurement_fields', field_rows($garmentId), $id, $direction);
 }
 
-function field_add(string $garmentId, string $name): array
+function field_add(string $garmentId, string $name, string $unit = ''): array
 {
     require_module('fashion.measurements');
     $name = trim($name);
-    if (!is_uuid($garmentId) || db_select('fashion_garment_types', ['id' => $garmentId]) === [] || $name === '' || strlen($name) > 80) {
+    $unit = trim($unit);
+    if (!is_uuid($garmentId) || db_select('fashion_garment_types', ['id' => $garmentId]) === [] || $name === '' || strlen($name) > 80 || strlen($unit) > 20) {
         return ['error' => 'required'];
     }
     $sort = 1;
@@ -333,11 +334,134 @@ function field_add(string $garmentId, string $name): array
         'garment_type_id' => $garmentId,
         'field_key' => measurement_unique_code('fashion_measurement_fields', 'field_key', measurement_slug($name), ['garment_type_id' => $garmentId]),
         'name' => $name,
+        'unit' => $unit,
         'sort_order' => $sort,
         'active' => 1,
         'placeholder' => 0,
     ]);
     return [];
+}
+
+function field_save(string $id, string $name, string $unit): array
+{
+    require_module('fashion.measurements');
+    $name = trim($name);
+    $unit = trim($unit);
+    if (!is_uuid($id) || $name === '' || strlen($name) > 80 || strlen($unit) > 20) {
+        return ['error' => 'required'];
+    }
+    if (db_select('fashion_measurement_fields', ['id' => $id]) === []) {
+        return ['error' => 'not_found'];
+    }
+    db_update('fashion_measurement_fields', ['name' => $name, 'unit' => $unit], ['id' => $id]);
+    return [];
+}
+
+function garment_measurement_count(string $id): int
+{
+    require_module('fashion.measurements');
+    if (!is_uuid($id)) {
+        return 0;
+    }
+    $rows = db_query(
+        'SELECT COUNT(*) AS total FROM fashion_measurements WHERE tenant_id = :tenant_id AND garment_type_id = :garment_id',
+        ['garment_id' => $id]
+    );
+    return (int) ($rows[0]['total'] ?? 0);
+}
+
+function garment_remove(string $id): array
+{
+    require_module('fashion.measurements');
+    if (!is_uuid($id) || db_select('fashion_garment_types', ['id' => $id]) === []) {
+        return ['error' => 'not_found'];
+    }
+    if (garment_measurement_count($id) > 0) {
+        garment_set_active($id, false);
+        return ['archived' => true];
+    }
+    db_begin();
+    try {
+        foreach (field_rows($id) as $field) {
+            db_delete('fashion_measurement_fields', ['id' => (string) $field['id']]);
+        }
+        db_delete('fashion_garment_types', ['id' => $id]);
+        db_commit();
+    } catch (Throwable $e) {
+        db_rollback();
+        throw $e;
+    }
+    return ['deleted' => true];
+}
+
+function field_has_saved_values(string $garmentId, string $key): bool
+{
+    $rows = db_query(
+        'SELECT values_json FROM fashion_measurements WHERE tenant_id = :tenant_id AND garment_type_id = :garment_id',
+        ['garment_id' => $garmentId]
+    );
+    foreach ($rows as $row) {
+        $decoded = json_decode((string) $row['values_json'], true);
+        if (is_array($decoded) && array_key_exists($key, $decoded)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function field_remove(string $id): array
+{
+    require_module('fashion.measurements');
+    if (!is_uuid($id)) {
+        return ['error' => 'not_found'];
+    }
+    $rows = db_select('fashion_measurement_fields', ['id' => $id]);
+    if ($rows === []) {
+        return ['error' => 'not_found'];
+    }
+    $field = $rows[0];
+    if (field_has_saved_values((string) $field['garment_type_id'], (string) $field['field_key'])) {
+        field_set_active($id, false);
+        return ['archived' => true];
+    }
+    db_delete('fashion_measurement_fields', ['id' => $id]);
+    return ['deleted' => true];
+}
+
+function field_order(string $garmentId, array $ids): void
+{
+    require_module('fashion.measurements');
+    if (!is_uuid($garmentId)) {
+        return;
+    }
+    $rows = field_rows($garmentId);
+    $byId = [];
+    foreach ($rows as $row) {
+        $byId[(string) $row['id']] = $row;
+    }
+    $ordered = [];
+    foreach ($ids as $id) {
+        $id = (string) $id;
+        if (isset($byId[$id])) {
+            $ordered[] = $byId[$id];
+            unset($byId[$id]);
+        }
+    }
+    foreach ($byId as $row) {
+        $ordered[] = $row;
+    }
+    db_begin();
+    try {
+        $sort = 1;
+        foreach ($ordered as $row) {
+            db_update('fashion_measurement_fields', ['sort_order' => $sort], ['id' => (string) $row['id']]);
+            $sort++;
+        }
+        db_commit();
+    } catch (Throwable $e) {
+        db_rollback();
+        throw $e;
+    }
 }
 
 function field_set_active(string $id, bool $active): void
