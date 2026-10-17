@@ -260,6 +260,34 @@ check(str_contains($editorPage, t('add_field')), 'the editor can add a field');
 check(str_contains($editorPage, t('field_removed')), 'removing a field offers undo');
 check(str_contains($editorPage, 'data-field-bin'), 'dragging shows a delete drop zone');
 check(str_contains($editorPage, t('garment_archive_confirm')), 'the confirmation says a used garment is archived');
+check(str_contains($editorPage, 'data-saved="' . e(t('saved')) . '"'), 'the editor can confirm a save without leaving the page');
+
+$liveField = field_rows($kaftan['id'])[0];
+$liveName = (string) $liveField['name'];
+$_SERVER['HTTP_ACCEPT'] = 'application/json';
+$_POST = [
+    'csrf' => csrf_token(),
+    'action' => 'field_save',
+    'id' => (string) $liveField['id'],
+    'garment_id' => $kaftan['id'],
+    'name' => 'Live neck',
+    'unit' => 'cm',
+];
+ob_start();
+$liveRedirected = false;
+try {
+    router_dispatch('POST', '/settings/garments');
+} catch (RedirectException $e) {
+    $liveRedirected = true;
+}
+$liveBody = (string) ob_get_clean();
+unset($_SERVER['HTTP_ACCEPT']);
+$_POST = [];
+check($liveRedirected === false, 'a live save stays on the editor');
+$liveJson = json_decode($liveBody, true);
+check(is_array($liveJson) && !empty($liveJson['ok']) && ($liveJson['name'] ?? '') === 'Live neck', 'a live save returns the new field text');
+check_eq((string) db_select('fashion_measurement_fields', ['id' => $liveField['id']])[0]['name'], 'Live neck', 'a live save is stored');
+field_save((string) $liveField['id'], $liveName, (string) ($liveField['unit'] ?? ''));
 
 module_save([
     'fashion.orders',

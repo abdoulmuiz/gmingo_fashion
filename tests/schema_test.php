@@ -11,7 +11,7 @@ $again = schema_migrate();
 $after = tests_table_count($main);
 
 check(str_ends_with((string) db()->query('SELECT DATABASE()')->fetchColumn(), '_test'), 'migration connects to the test database');
-$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql', '007_field_unit.sql'];
+$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql', '006_payment_reason.sql', '007_field_unit.sql', '008_deposit_stage.sql', '009_fabric_log.sql', '010_order_groups.sql', '011_stock.sql', '012_fittings.sql', '013_messages.sql', '014_tracking.sql', '015_receipts.sql', '016_customer_lang.sql'];
 foreach ($applied as $file) {
     check(in_array($file, $knownMigrations, true), $file . ' is a fashion migration');
 }
@@ -28,6 +28,7 @@ $expected = [
     'fashion_customers',
     'fashion_orders',
     'fashion_order_items',
+    'fashion_order_fabric_log',
     'fashion_order_groups',
     'fashion_order_counters',
     'fashion_stage_definitions',
@@ -42,6 +43,15 @@ $expected = [
     'fashion_activity_log',
     'fashion_payment_settings',
     'fashion_payment_requests',
+    'fashion_stock_items',
+    'fashion_stock_movements',
+    'fashion_fittings',
+    'fashion_message_templates',
+    'fashion_messages',
+    'fashion_track_limits',
+    'fashion_receipt_counters',
+    'fashion_receipts',
+    'fashion_receipt_voids',
 ];
 $present = db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 foreach ($expected as $table) {
@@ -75,6 +85,26 @@ $reverse = db()->prepare(
 $reverse->execute(['table_name' => 'fashion_payments', 'column_name' => 'reverses_payment_id']);
 $reverseRow = $reverse->fetch();
 check(is_array($reverseRow) && $reverseRow['IS_NULLABLE'] === 'YES', 'payments can point at the row they reverse');
+
+$reasonColumn = db()->prepare(
+    'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+);
+$reasonColumn->execute(['table_name' => 'fashion_payments', 'column_name' => 'reason']);
+$reasonColumnRow = $reasonColumn->fetch();
+check(is_array($reasonColumnRow) && $reasonColumnRow['DATA_TYPE'] === 'varchar' && (int) $reasonColumnRow['CHARACTER_MAXIMUM_LENGTH'] === 500 && $reasonColumnRow['IS_NULLABLE'] === 'YES', 'a payment can store a reversal reason');
+
+$eventDate = db()->prepare(
+    'SELECT DATA_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+);
+$eventDate->execute(['table_name' => 'fashion_order_groups', 'column_name' => 'event_date']);
+$eventDateRow = $eventDate->fetch();
+check(is_array($eventDateRow) && $eventDateRow['DATA_TYPE'] === 'date' && $eventDateRow['IS_NULLABLE'] === 'YES', 'a group can store an optional event date');
+$sharedPayment = db()->prepare(
+    'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+);
+$sharedPayment->execute(['table_name' => 'fashion_payments', 'column_name' => 'group_payment_id']);
+$sharedPaymentRow = $sharedPayment->fetch();
+check(is_array($sharedPaymentRow) && $sharedPaymentRow['DATA_TYPE'] === 'char' && (int) $sharedPaymentRow['CHARACTER_MAXIMUM_LENGTH'] === 36 && $sharedPaymentRow['IS_NULLABLE'] === 'YES', 'split payments share a group payment id');
 
 $unitColumn = db()->prepare(
     'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'

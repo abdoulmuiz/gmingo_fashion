@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/modules.php';
 require_once __DIR__ . '/orders.php';
+require_once __DIR__ . '/groups.php';
+require_once __DIR__ . '/receipts.php';
 
 function payment_record(string $orderId, string $amount, string $method): array
 {
@@ -23,22 +25,43 @@ function payment_record(string $orderId, string $amount, string $method): array
     if ($userId === null) {
         throw new RuntimeException('Missing session.');
     }
-    $id = db_insert('fashion_payments', [
-        'order_id' => $orderId,
+    receipt_write_guard();
+    $ownTransaction = !db()->inTransaction();
+    if ($ownTransaction) {
+        db_begin();
+    }
+    try {
+        $id = db_insert('fashion_payments', [
+            'order_id' => $orderId,
+            'amount_kobo' => $kobo,
+            'method' => $method,
+            'reverses_payment_id' => null,
+            'kind' => 'payment',
+            'user_id' => $userId,
+            'created_at' => date('Y-m-d H:i:s'),
+            'provider' => 'manual',
+            'provider_reference' => null,
+            'source' => 'staff',
+        ]);
+        $receipt = receipt_issue($id);
+        if ($ownTransaction) {
+            db_commit();
+        }
+    } catch (Throwable $e) {
+        if ($ownTransaction) {
+            db_rollback();
+        }
+        throw $e;
+    }
+    return [
+        'id' => $id,
         'amount_kobo' => $kobo,
-        'method' => $method,
-        'reverses_payment_id' => null,
-        'kind' => 'payment',
-        'user_id' => $userId,
-        'created_at' => date('Y-m-d H:i:s'),
-        'provider' => 'manual',
-        'provider_reference' => null,
-        'source' => 'staff',
-    ]);
-    return ['id' => $id, 'amount_kobo' => $kobo];
+        'receipt_id' => $receipt['id'],
+        'receipt_number' => $receipt['receipt_number'],
+    ];
 }
 
-function payment_reverse(string $orderId, string $paymentId): array
+function payment_reverse(string $orderId, string $paymentId, string $reason): array
 {
     require_module('fashion.finance');
     if (!is_uuid($orderId) || !is_uuid($paymentId)) {
@@ -50,9 +73,17 @@ function payment_reverse(string $orderId, string $paymentId): array
         http_response_code(404);
         throw new HttpException(t('not_found'), 404);
     }
+    $reason = trim($reason);
+    if ($reason === '' || strlen($reason) > 500) {
+        return ['error' => 'reversal_reason_required'];
+    }
     $payment = $rows[0];
     if ((string) $payment['kind'] !== 'payment') {
         return ['error' => 'not_allowed'];
+    }
+    $groupPaymentId = $payment['group_payment_id'] ?? null;
+    if (is_string($groupPaymentId) && $groupPaymentId !== '') {
+        return group_payment_reverse($groupPaymentId, $reason);
     }
     if (db_select('fashion_payments', ['reverses_payment_id' => $paymentId]) !== []) {
         return ['error' => 'already_reversed'];
@@ -61,23 +92,40 @@ function payment_reverse(string $orderId, string $paymentId): array
     if ($userId === null) {
         throw new RuntimeException('Missing session.');
     }
+    receipt_write_guard();
     $amount = (int) $payment['amount_kobo'];
     $provider = (string) ($payment['provider'] ?? 'manual');
     if (!in_array($provider, ['manual', 'paystack'], true)) {
         $provider = 'manual';
     }
-    $id = db_insert('fashion_payments', [
-        'order_id' => $orderId,
-        'amount_kobo' => -$amount,
-        'method' => (string) $payment['method'],
-        'reverses_payment_id' => $paymentId,
-        'kind' => 'reversal',
-        'user_id' => $userId,
-        'created_at' => date('Y-m-d H:i:s'),
-        'provider' => $provider,
-        'provider_reference' => null,
-        'source' => 'staff',
-    ]);
+    $ownTransaction = !db()->inTransaction();
+    if ($ownTransaction) {
+        db_begin();
+    }
+    try {
+        $id = db_insert('fashion_payments', [
+            'order_id' => $orderId,
+            'amount_kobo' => -$amount,
+            'method' => (string) $payment['method'],
+            'reverses_payment_id' => $paymentId,
+            'kind' => 'reversal',
+            'user_id' => $userId,
+            'created_at' => date('Y-m-d H:i:s'),
+            'provider' => $provider,
+            'provider_reference' => null,
+            'source' => 'staff',
+            'reason' => $reason,
+        ]);
+        receipt_void_payment($paymentId);
+        if ($ownTransaction) {
+            db_commit();
+        }
+    } catch (Throwable $e) {
+        if ($ownTransaction) {
+            db_rollback();
+        }
+        throw $e;
+    }
     return ['id' => $id, 'amount_kobo' => -$amount];
 }
 
@@ -102,6 +150,7 @@ function payment_history(string $orderId): array
             'reversed' => isset($reversed[(string) $row['id']]),
             'provider' => (string) ($row['provider'] ?? 'manual'),
             'provider_reference' => (string) ($row['provider_reference'] ?? ''),
+            'reason' => (string) ($row['reason'] ?? ''),
         ];
     }
     return $history;

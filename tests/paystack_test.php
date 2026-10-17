@@ -420,7 +420,7 @@ check(str_contains($historyPage, t('mode_paystack')), 'the order page labels the
 check(str_contains($historyPage, $reference), 'the order page shows the Paystack reference');
 check(str_contains($historyPage, '/reverse'), 'a Paystack payment can still be reversed');
 check(!str_contains($historyPage, 'delete'), 'staff cannot delete a Paystack payment');
-$reversed = payment_reverse($orderId, (string) $paidRows[0]['id']);
+$reversed = payment_reverse($orderId, (string) $paidRows[0]['id'], 'Customer paid twice');
 check(isset($reversed['id']), 'a reversal is a new row');
 $stillThere = db_select('fashion_payments', ['id' => (string) $paidRows[0]['id']], ['limit' => 1]);
 check(count($stillThere) === 1, 'the original Paystack payment stays in the history');
@@ -428,6 +428,7 @@ $reversal = db_select('fashion_payments', ['id' => (string) $reversed['id']], ['
 check_eq((string) $reversal['kind'], 'reversal', 'the reversal is its own payment row');
 check_eq((string) $reversal['provider'], 'paystack', 'the reversal keeps the Paystack provider');
 check_eq((int) $reversal['amount_kobo'], -$balanceBefore, 'the reversal puts the amount back');
+check_eq((string) $reversal['reason'], 'Customer paid twice', 'a Paystack reversal keeps the reason');
 
 $transport = (string) file_get_contents(dirname(__DIR__) . '/app/payments/PaystackTransport.php');
 $provider = (string) file_get_contents(dirname(__DIR__) . '/app/payments/PaystackProvider.php');

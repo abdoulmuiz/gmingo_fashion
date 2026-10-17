@@ -117,6 +117,20 @@ function garments_submit(): void
         $ids = $_POST['ids'] ?? [];
         field_order($garmentId, is_array($ids) ? $ids : []);
     }
+    if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) {
+        header('Content-Type: application/json; charset=UTF-8');
+        $payload = ['ok' => !isset($result['error'])];
+        if (isset($result['error'])) {
+            $payload['error'] = t((string) $result['error']);
+        }
+        foreach (['id', 'name', 'unit', 'archived', 'deleted'] as $key) {
+            if (array_key_exists($key, $result)) {
+                $payload[$key] = $result[$key];
+            }
+        }
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        return;
+    }
     if (isset($result['error'])) {
         flash_set('error', t((string) $result['error']));
     } else {

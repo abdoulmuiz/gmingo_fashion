@@ -262,4 +262,35 @@ if ! grep -F -q "$ADD_FIELD" "$tmpdir/editor.html"; then
 fi
 echo "OK ${editor_code} ${ORIGIN}${editor_path} contains ${ADD_FIELD}"
 
+orders_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/orders.html" -w '%{http_code}' "${ORIGIN}${BASE_PATH}/orders" || true)"
+if [[ "$orders_code" != "200" ]]; then
+    fail "the order list did not open for a tracking link" "status ${orders_code}"
+fi
+order_path="$(grep -oE "${BASE_PATH}/orders/[0-9a-f-]{36}" "$tmpdir/orders.html" | head -n 1 || true)"
+if [[ -z "$order_path" ]]; then
+    fail "the demo shop has no order for a tracking link" "$(head -c 300 "$tmpdir/orders.html")"
+fi
+order_code="$(curl -sS --connect-timeout 5 --max-time 20 -c "$jar" -b "$jar" -o "$tmpdir/order.html" -w '%{http_code}' "${ORIGIN}${order_path}" || true)"
+if [[ "$order_code" != "200" ]]; then
+    fail "the order page did not open for a tracking link" "status ${order_code} ${order_path}"
+fi
+track_path="$(grep -oE "${BASE_PATH}/track/[a-f0-9]{32}" "$tmpdir/order.html" | head -n 1 || true)"
+if [[ -z "$track_path" ]]; then
+    fail "the order page has no tracking link" "$(head -c 400 "$tmpdir/order.html")"
+fi
+track_code="$(curl -sS --connect-timeout 5 --max-time 20 -D "$tmpdir/track.hdr" -o "$tmpdir/track.html" -w '%{http_code}' "${ORIGIN}${track_path}" || true)"
+if [[ "$track_code" != "200" ]]; then
+    fail "the public tracking link should return 200, not an .htaccess block" "status ${track_code} ${track_path}"$'\n'"$(head -c 400 "$tmpdir/track.html")"
+fi
+if ! grep -q 'name="robots" content="noindex, nofollow"' "$tmpdir/track.html"; then
+    fail "the public tracking page did not render" "$(head -c 400 "$tmpdir/track.html")"
+fi
+if ! grep -qi '^X-Robots-Tag: noindex, nofollow' "$tmpdir/track.hdr"; then
+    fail "the public tracking page did not send a robots header" "$(cat "$tmpdir/track.hdr")"
+fi
+if ! grep -qi '^Cache-Control: private, no-store' "$tmpdir/track.hdr"; then
+    fail "the public tracking page did not send a private no-store cache header" "$(cat "$tmpdir/track.hdr")"
+fi
+echo "OK ${track_code} ${ORIGIN}${track_path}"
+
 echo "Smoke test passed"

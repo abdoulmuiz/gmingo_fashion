@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/orders.php';
 require_once __DIR__ . '/payments.php';
+require_once __DIR__ . '/stock.php';
 
 function dashboard_hello(int $hour): string
 {
@@ -60,6 +61,9 @@ function dashboard_home(?int $hour = null): array
     if (module_enabled('fashion.finance')) {
         $cards[] = dashboard_card('card_money', money((int) payment_outstanding()['total_kobo']));
     }
+    if (module_enabled('fashion.inventory')) {
+        $cards[] = dashboard_card('card_low_stock', (string) stock_low_count(), '', '/stock');
+    }
     return [
         'greeting' => dashboard_greeting($hour),
         'cards' => $cards,
@@ -69,13 +73,14 @@ function dashboard_home(?int $hour = null): array
     ];
 }
 
-function dashboard_card(string $key, string $value, string $note = ''): array
+function dashboard_card(string $key, string $value, string $note = '', string $href = ''): array
 {
     return [
         'key' => $key,
         'label' => t($key),
         'value' => $value,
         'note' => $note,
+        'href' => $href,
     ];
 }
 

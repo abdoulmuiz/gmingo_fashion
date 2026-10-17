@@ -77,17 +77,24 @@ foreach (['10.555', '0', '-5', 'abc', ''] as $bad) {
 check_eq(count(db_select('fashion_payments', ['order_id' => $order['id']])), 2, 'a rejected amount is not stored');
 check(isset(payment_record($order['id'], '10', 'card')['error']), 'a payment method is cash or transfer');
 
-$reversed = payment_reverse($order['id'], $transfer['id']);
+$blank = payment_reverse($order['id'], $transfer['id'], '   ');
+check_eq($blank['error'] ?? '', 'reversal_reason_required', 'a reversal needs a reason');
+$tooLong = payment_reverse($order['id'], $transfer['id'], str_repeat('a', 501));
+check_eq($tooLong['error'] ?? '', 'reversal_reason_required', 'a reversal reason stays within 500 characters');
+check_eq(count(db_select('fashion_payments', ['order_id' => $order['id']])), 2, 'a reversal without a reason is not stored');
+$reversed = payment_reverse($order['id'], $transfer['id'], 'Customer paid twice');
 check_eq($reversed['amount_kobo'], -700025, 'a reversal stores the opposite whole kobo amount');
 $original = db_select('fashion_payments', ['id' => $transfer['id']])[0];
 check_eq((int) $original['amount_kobo'], 700025, 'the original payment stays unchanged');
+check(($original['reason'] ?? null) === null, 'the original payment does not gain a reason');
 $reversal = db_select('fashion_payments', ['id' => $reversed['id']])[0];
 check_eq((string) $reversal['kind'], 'reversal', 'a mistake is a new reversing payment');
 check_eq((string) $reversal['reverses_payment_id'], $transfer['id'], 'the reversing payment points at the original');
+check_eq((string) $reversal['reason'], 'Customer paid twice', 'the reversal row stores the reason');
 $after = order_find($order['id']);
 check_eq($after['paid_kobo'], 500000, 'a reversal reduces the amount paid');
 check_eq($after['balance_kobo'], 1500000, 'a reversal restores the balance');
-$again = payment_reverse($order['id'], $transfer['id']);
+$again = payment_reverse($order['id'], $transfer['id'], 'Customer paid twice');
 check_eq($again['error'] ?? '', 'already_reversed', 'a payment is reversed once');
 check_eq(count(db_select('fashion_payments', ['order_id' => $order['id']])), 3, 'a second reversal is not stored');
 check_throws(
@@ -129,7 +136,7 @@ try {
     check($e->status() === 404, 'another shop cannot record a payment');
 }
 try {
-    payment_reverse($order['id'], $cash['id']);
+    payment_reverse($order['id'], $cash['id'], 'Not this shop');
     check(false, 'another shop cannot reverse a payment');
 } catch (HttpException $e) {
     check($e->status() === 404, 'another shop cannot reverse a payment');
@@ -161,6 +168,19 @@ check(str_contains($open, t('balance')), 'the order page shows the balance');
 check(str_contains($open, t('record_payment')), 'the order page has the payment form');
 check(str_contains($open, money(1000)), 'the payment history shows the recorded amount');
 check(str_contains($open, t('reverse')), 'a payment can be reversed from the order page');
+check(str_contains($open, 'name="reason"'), 'the reverse form asks for a reason');
+check(str_contains($open, 'Customer paid twice'), 'the payment history shows the reversal reason');
+$_POST = [
+    'csrf' => csrf_token(),
+    'reason' => '   ',
+];
+try {
+    router_dispatch('POST', '/orders/' . $order['id'] . '/payments/' . $cash['id'] . '/reverse');
+    check(false, 'a reversal without a reason redirects');
+} catch (RedirectException $e) {
+    check_eq($e->path(), '/orders/' . $order['id'], 'a reversal without a reason returns to the order');
+}
+check_eq(count(db_select('fashion_payments', ['reverses_payment_id' => $cash['id']])), 0, 'a blank reason stores no reversal');
 
 $_SERVER['REQUEST_URI'] = base_path() . '/outstanding';
 ob_start();

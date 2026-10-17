@@ -12,6 +12,112 @@
     var undoTimer = null;
     var undoRow = null;
 
+    function postForm(form) {
+        return fetch(form.getAttribute('action') || '', {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        }).then(function (response) {
+            return response.json().then(function (body) {
+                if (!response.ok || !body || !body.ok) {
+                    var failed = new Error('save failed');
+                    failed.body = body;
+                    throw failed;
+                }
+                return body;
+            });
+        });
+    }
+
+    function markSaved(button) {
+        if (!button) {
+            return;
+        }
+        var original = button.getAttribute('data-label') || button.textContent;
+        button.setAttribute('data-label', original);
+        button.textContent = editor.getAttribute('data-saved') || original;
+        window.setTimeout(function () {
+            button.textContent = original;
+        }, 1200);
+    }
+
+    function showError(form, error) {
+        var text = error && error.body && error.body.error ? error.body.error : '';
+        if (!text || !form) {
+            return;
+        }
+        var note = form.querySelector('[data-live-note]');
+        if (!note) {
+            note = document.createElement('span');
+            note.className = 'live-note';
+            note.setAttribute('data-live-note', '');
+            form.appendChild(note);
+        }
+        note.textContent = text;
+    }
+
+    function shiftRow(row, direction) {
+        if (!list || !row) {
+            return false;
+        }
+        var sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+        while (sibling && sibling.hidden) {
+            sibling = direction < 0 ? sibling.previousElementSibling : sibling.nextElementSibling;
+        }
+        if (!sibling || !sibling.hasAttribute('data-field-id')) {
+            return false;
+        }
+        if (direction < 0) {
+            list.insertBefore(row, sibling);
+        } else {
+            list.insertBefore(sibling, row);
+        }
+        return true;
+    }
+
+    function applySaved(form, body) {
+        if (body.name) {
+            var nameInput = form.querySelector('input[name="name"]');
+            if (nameInput) {
+                nameInput.value = body.name;
+            }
+            if (form.classList.contains('name-bar')) {
+                var heading = editor.querySelector('h1');
+                if (heading) {
+                    heading.textContent = body.name;
+                }
+            }
+        }
+        if (typeof body.unit === 'string') {
+            var unitInput = form.querySelector('input[name="unit"]');
+            if (unitInput) {
+                unitInput.value = body.unit;
+            }
+        }
+    }
+
+    function addRow(body) {
+        var template = editor.querySelector('[data-field-template]');
+        if (!template || !list || !body.id) {
+            return;
+        }
+        var row = template.content.firstElementChild.cloneNode(true);
+        row.setAttribute('data-field-id', body.id);
+        row.querySelectorAll('input[name="id"]').forEach(function (input) {
+            input.value = body.id;
+        });
+        var nameInput = row.querySelector('.field-edit input[name="name"]');
+        var unitInput = row.querySelector('.field-edit input[name="unit"]');
+        if (nameInput) {
+            nameInput.value = body.name || '';
+        }
+        if (unitInput) {
+            unitInput.value = body.unit || '';
+        }
+        list.appendChild(row);
+    }
+
     function saveOrder() {
         var form = editor.querySelector('[data-field-order]');
         if (!form || !list) {
@@ -30,7 +136,9 @@
             input.value = row.getAttribute('data-field-id') || '';
             form.appendChild(input);
         });
-        form.submit();
+        postForm(form).catch(function () {
+            window.location.reload();
+        });
     }
 
     function removeRow(row) {
@@ -51,9 +159,24 @@
         undoTimer = window.setTimeout(function () {
             bar.hidden = true;
             var form = row.querySelector('[data-remove-form]');
-            if (form) {
-                form.submit();
+            if (!form) {
+                return;
             }
+            postForm(form).then(function (body) {
+                if (body.archived) {
+                    row.hidden = false;
+                    row.classList.add('is-off');
+                    var activate = row.querySelector('[data-activate-form]');
+                    if (activate) {
+                        activate.hidden = false;
+                    }
+                    return;
+                }
+                row.remove();
+            }).catch(function (error) {
+                row.hidden = false;
+                showError(form, error);
+            });
         }, 4000);
     }
 
@@ -131,6 +254,54 @@
             removeRow(button.closest('[data-field-id]'));
         });
     }
+    editor.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!(form instanceof HTMLFormElement) || form.hasAttribute('data-confirm')) {
+            return;
+        }
+        var actionInput = form.querySelector('input[name="action"]');
+        var action = actionInput ? actionInput.value : '';
+        if (action === '' || action === 'garment_remove') {
+            return;
+        }
+        event.preventDefault();
+        var row = form.closest('[data-field-id]');
+        var moved = false;
+        if (action === 'field_up') {
+            moved = shiftRow(row, -1);
+        } else if (action === 'field_down') {
+            moved = shiftRow(row, 1);
+        }
+        var button = form.querySelector('button[type="submit"]');
+        postForm(form).then(function (body) {
+            if (action === 'field_add') {
+                addRow(body);
+                var addedName = form.querySelector('input[name="name"]');
+                var addedUnit = form.querySelector('input[name="unit"]');
+                if (addedName) {
+                    addedName.value = '';
+                }
+                if (addedUnit) {
+                    addedUnit.value = '';
+                }
+            } else if (action === 'field_activate' && row) {
+                row.classList.remove('is-off');
+                form.hidden = true;
+            } else {
+                applySaved(form, body);
+            }
+            markSaved(button);
+            var note = form.querySelector('[data-live-note]');
+            if (note) {
+                note.textContent = '';
+            }
+        }).catch(function (error) {
+            if (moved) {
+                shiftRow(row, action === 'field_up' ? 1 : -1);
+            }
+            showError(form, error);
+        });
+    });
     if (undoButton) {
         undoButton.addEventListener('click', function () {
             window.clearTimeout(undoTimer);

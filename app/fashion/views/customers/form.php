@@ -18,6 +18,13 @@
             </select>
         </label>
         <?php if (!empty($errors['gender'])): ?><p class="error"><?= e(t((string) $errors['gender'])) ?></p><?php endif; ?>
+        <label><?= e(t('language')) ?>
+            <select name="lang">
+                <option value="" <?= ($old['lang'] ?? '') === '' ? 'selected' : '' ?>><?= e(t('shop_default_language')) ?></option>
+                <option value="en" <?= ($old['lang'] ?? '') === 'en' ? 'selected' : '' ?>><?= e(t('english')) ?></option>
+                <option value="ha" <?= ($old['lang'] ?? '') === 'ha' ? 'selected' : '' ?>><?= e(t('hausa')) ?></option>
+            </select>
+        </label>
         <label><?= e(t('type')) ?>
             <select name="customer_type">
                 <option value="regular" <?= ($old['customer_type'] ?? '') === 'regular' ? 'selected' : '' ?>><?= e(t('regular')) ?></option>

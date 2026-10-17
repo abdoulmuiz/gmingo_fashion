@@ -185,7 +185,16 @@ $registerHtml = (string) ob_get_clean();
 check(str_contains($registerHtml, 'name="csrf"'), 'register form includes a CSRF token');
 check(str_contains($registerHtml, 'name="business_name"'), 'register form asks for the shop');
 
-$openWhenSignedOut = ['/login', '/register', '/pay/return'];
+$openWhenSignedOut = [
+    '/login',
+    '/register',
+    '/pay/return',
+    '/track/{token}',
+    '/track/{token}/invoice.png',
+    '/track/{token}/invoice.pdf',
+    '/track/{token}/receipt/{id}.png',
+    '/track/{token}/receipt/{id}.pdf',
+];
 foreach ($GLOBALS['gmingo_routes'] as [$method, $pattern, $handler]) {
     if ($method !== 'GET' || in_array($pattern, $openWhenSignedOut, true)) {
         continue;
@@ -210,3 +219,8 @@ try {
     ob_end_clean();
     check_eq($e->path(), '/login', 'signed-out unknown page redirects to login');
 }
+$_SERVER['REQUEST_URI'] = base_path() . '/track/not-a-token';
+ob_start();
+router_dispatch('GET', '/track/not-a-token');
+$publicTrack = (string) ob_get_clean();
+check(http_response_code() === 404 && str_contains($publicTrack, 'Page not found'), 'a signed-out tracking link shows Page not found');

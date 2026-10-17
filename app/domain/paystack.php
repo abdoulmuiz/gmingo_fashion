@@ -281,6 +281,7 @@ function paystack_rate_hit(string $token): void
  */
 function paystack_append_payment(array $request, string $source): string
 {
+    receipt_write_guard();
     $reference = (string) $request['reference'];
     try {
         db_begin();
@@ -296,7 +297,7 @@ function paystack_append_payment(array $request, string $source): string
             db_commit();
             return (string) $locked[0]['status'] === 'paid' ? 'paid' : 'ignored';
         }
-        db_insert('fashion_payments', [
+        $paymentId = db_insert('fashion_payments', [
             'order_id' => (string) $locked[0]['order_id'],
             'amount_kobo' => (int) $locked[0]['amount_kobo'],
             'method' => 'transfer',
@@ -308,6 +309,7 @@ function paystack_append_payment(array $request, string $source): string
             'provider_reference' => $reference,
             'source' => $source,
         ]);
+        receipt_issue($paymentId);
         db_update('fashion_payment_requests', [
             'status' => 'paid',
             'needs_review' => 0,

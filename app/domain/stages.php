@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/modules.php';
+require_once __DIR__ . '/deposits.php';
+require_once __DIR__ . '/messages.php';
 
 function stage_definitions(): array
 {
@@ -73,13 +75,21 @@ function stage_advance(string $orderId): array
     if ($userId === null) {
         throw new RuntimeException('Missing session.');
     }
+    $depositBlock = deposit_move_block($orderId, (string) $next['id']);
+    if ($depositBlock !== null) {
+        return $depositBlock;
+    }
     db_insert('fashion_stage_events', [
         'order_id' => $orderId,
         'stage_id' => (string) $next['id'],
         'user_id' => $userId,
         'note' => null,
+        'kind' => 'move',
         'created_at' => date('Y-m-d H:i:s'),
     ]);
+    if ((string) ($next['role'] ?? '') === 'ready') {
+        message_queue_ready($orderId);
+    }
     return ['stage_id' => (string) $next['id'], 'code' => (string) $next['code']];
 }
 

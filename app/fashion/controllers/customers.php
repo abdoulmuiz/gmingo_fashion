@@ -35,6 +35,7 @@ function customers_save(): void
         'phone' => (string) ($_POST['phone'] ?? ''),
         'gender' => (string) ($_POST['gender'] ?? ''),
         'customer_type' => (string) ($_POST['customer_type'] ?? ''),
+        'lang' => (string) ($_POST['lang'] ?? ''),
     ];
     $result = customer_create($input);
     if (isset($result['errors'])) {

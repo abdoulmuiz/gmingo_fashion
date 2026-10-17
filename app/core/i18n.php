@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 function current_lang(): string
 {
+    $override = $GLOBALS['gmingo_lang_override'] ?? null;
+    if (is_string($override) && in_array($override, ['en', 'ha'], true)) {
+        return $override;
+    }
     $code = $_COOKIE['lang'] ?? 'en';
     if (!is_string($code) || !in_array($code, ['en', 'ha'], true)) {
         return 'en';

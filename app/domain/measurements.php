@@ -254,7 +254,7 @@ function garment_rename(string $id, string $name): array
         return ['error' => 'required'];
     }
     db_update('fashion_garment_types', ['name' => $name], ['id' => $id]);
-    return [];
+    return ['name' => $name];
 }
 
 function garment_reorder(string $id, string $direction): void
@@ -330,7 +330,7 @@ function field_add(string $garmentId, string $name, string $unit = ''): array
     foreach (field_rows($garmentId) as $field) {
         $sort = max($sort, (int) $field['sort_order'] + 1);
     }
-    db_insert('fashion_measurement_fields', [
+    $id = db_insert('fashion_measurement_fields', [
         'garment_type_id' => $garmentId,
         'field_key' => measurement_unique_code('fashion_measurement_fields', 'field_key', measurement_slug($name), ['garment_type_id' => $garmentId]),
         'name' => $name,
@@ -339,7 +339,7 @@ function field_add(string $garmentId, string $name, string $unit = ''): array
         'active' => 1,
         'placeholder' => 0,
     ]);
-    return [];
+    return ['id' => $id, 'name' => $name, 'unit' => $unit];
 }
 
 function field_save(string $id, string $name, string $unit): array
@@ -354,7 +354,7 @@ function field_save(string $id, string $name, string $unit): array
         return ['error' => 'not_found'];
     }
     db_update('fashion_measurement_fields', ['name' => $name, 'unit' => $unit], ['id' => $id]);
-    return [];
+    return ['name' => $name, 'unit' => $unit];
 }
 
 function garment_measurement_count(string $id): int

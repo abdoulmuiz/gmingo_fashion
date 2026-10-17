@@ -13,7 +13,7 @@
     <section class="stats">
         <?php foreach ($cards as $card): ?>
             <div>
-                <span><?= e($card['label']) ?></span>
+                <span><?php if (($card['href'] ?? '') !== ''): ?><a href="<?= e(url((string) $card['href'])) ?>"><?= e($card['label']) ?></a><?php else: ?><?= e($card['label']) ?><?php endif; ?></span>
                 <strong><?= e($card['value']) ?></strong>
                 <?php if ($card['note'] !== ''): ?>
                     <span><?= e($card['note']) ?></span>

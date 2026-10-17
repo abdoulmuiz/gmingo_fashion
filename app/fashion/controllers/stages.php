@@ -22,11 +22,36 @@ function stage_move_submit(string $id): void
     csrf_check();
     $result = stage_advance($id);
     if (isset($result['error'])) {
-        flash_set('error', t((string) $result['error']));
+        flash_set('error', stage_result_message($result));
     } else {
         flash_set('success', t('moved'));
     }
     redirect('/orders/' . $id);
+}
+
+function deposit_override_submit(string $id): void
+{
+    require_module('fashion.production');
+    csrf_check();
+    $result = deposit_override($id, (string) ($_POST['reason'] ?? ''));
+    if (isset($result['error'])) {
+        flash_set('error', stage_result_message($result));
+    } else {
+        flash_set('success', t('deposit_override_saved'));
+    }
+    redirect('/orders/' . $id);
+}
+
+function stage_result_message(array $result): string
+{
+    if (($result['error'] ?? '') === 'deposit_short') {
+        return t('deposit_short', [
+            'due' => money((int) $result['due_kobo']),
+            'paid' => money((int) $result['paid_kobo']),
+            'needed' => money((int) $result['needed_kobo']),
+        ]);
+    }
+    return t((string) $result['error']);
 }
 
 function stages_form(): void

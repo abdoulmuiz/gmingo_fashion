@@ -1,7 +1,10 @@
 <section class="card">
     <div class="split">
         <h1><?= e(t('orders')) ?></h1>
-        <a class="btn btn-small" href="<?= e(url('/orders/new')) ?>"><?= e(t('new_order')) ?></a>
+        <span class="actions">
+            <a class="btn btn-small btn-quiet" href="<?= e(url('/calendar')) ?>"><?= e(t('calendar')) ?></a>
+            <a class="btn btn-small" href="<?= e(url('/orders/new')) ?>"><?= e(t('new_order')) ?></a>
+        </span>
     </div>
     <nav class="tabs" aria-label="<?= e(t('orders')) ?>">
         <?php foreach (order_tabs() as $tab): ?>
@@ -32,6 +35,7 @@
         <strong><?= e($order['order_number']) ?></strong>
         <span class="tag"><?= e(t($order['paid'] ? 'paid' : 'unpaid')) ?></span>
         <?php if ($order['urgent']): ?><span class="tag"><?= e(t('urgent')) ?></span><?php endif; ?>
+        <?php if ($order['fabric_badge']): ?><span class="tag"><?= e(t('fabric_left', ['yards' => yards_format((int) $order['yards_left_hundredths'])])) ?></span><?php endif; ?>
         <p class="meta"><?= e($order['customer_name']) ?> · <?= e($order['due_date']) ?></p>
     </a>
 <?php endforeach; ?>

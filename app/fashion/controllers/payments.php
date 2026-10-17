@@ -36,7 +36,7 @@ function payment_reverse_submit(string $orderId, string $paymentId): void
 {
     require_module('fashion.finance');
     csrf_check();
-    $result = payment_reverse($orderId, $paymentId);
+    $result = payment_reverse($orderId, $paymentId, (string) ($_POST['reason'] ?? ''));
     if (isset($result['error'])) {
         flash_set('error', t((string) $result['error']));
     } else {

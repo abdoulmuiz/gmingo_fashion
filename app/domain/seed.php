@@ -11,7 +11,13 @@ require_once __DIR__ . '/stages.php';
 
 function seed_is_local(array $config): bool
 {
-    return ($config['environment'] ?? null) === 'local';
+    $environment = $config['environment'] ?? null;
+    return $environment === 'local' || $environment === 'dev';
+}
+
+function seed_password(): string
+{
+    return 'password';
 }
 
 function seed_refusal_message(): string
@@ -21,54 +27,195 @@ function seed_refusal_message(): string
 
 function seed_demo(): array
 {
-    $email = 'demo@gmingo.test';
-    $password = 'password';
-    $login = login_user($email, $password);
+    $created = seed_company([
+        'business_name' => 'Demo Factory',
+        'owner_name' => 'Demo Factory Owner',
+        'email' => 'factory@gmingo.test',
+        'phone' => '08090000011',
+        'company_type' => 'factory',
+        'staff_email' => 'factory-staff@gmingo.test',
+        'staff_name' => 'Demo Factory Staff',
+        'fill' => 'factory',
+    ]);
+    $created = seed_company([
+        'business_name' => 'Demo Brand',
+        'owner_name' => 'Demo Brand Owner',
+        'email' => 'brand@gmingo.test',
+        'phone' => '08090000012',
+        'company_type' => 'brand',
+        'staff_email' => 'brand-staff@gmingo.test',
+        'staff_name' => 'Demo Brand Staff',
+        'fill' => 'brand',
+    ]) || $created;
+    $created = seed_company([
+        'business_name' => 'Kano Stitches Tailoring',
+        'owner_name' => 'Amina Bello',
+        'email' => 'demo@gmingo.test',
+        'phone' => '08039876010',
+        'company_type' => 'tailor',
+        'staff_email' => 'tailor-staff@gmingo.test',
+        'staff_name' => 'Demo Tailor Staff',
+        'fill' => 'tailor',
+    ]) || $created;
+    return [
+        'status' => $created ? 'created' : 'exists',
+        'user_id' => (string) current_user_id(),
+        'tenant_id' => (string) current_tenant_id(),
+    ];
+}
+
+function seed_company(array $spec): bool
+{
+    $email = (string) $spec['email'];
+    $login = login_user($email, seed_password());
     if ($login === 'rate_limited') {
         throw new RuntimeException('Too many sign-in tries for the demo shop. Wait five minutes and run this again.');
     }
-    if ($login === null) {
-        $customers = db_select('fashion_customers', [], ['limit' => 20]);
-        $orders = db_select('fashion_orders', [], ['limit' => 50]);
-        if (count($customers) === 10 && count($orders) === 15) {
-            return [
-                'status' => 'exists',
-                'user_id' => (string) current_user_id(),
-                'tenant_id' => (string) current_tenant_id(),
-            ];
+    $created = false;
+    if ($login !== null) {
+        $result = business_register([
+            'business_name' => (string) $spec['business_name'],
+            'owner_name' => (string) $spec['owner_name'],
+            'email' => $email,
+            'password' => seed_password(),
+            'phone' => (string) $spec['phone'],
+            'company_type' => (string) $spec['company_type'],
+        ]);
+        if (isset($result['errors'])) {
+            $emailError = (string) ($result['errors']['email'] ?? '');
+            if ($emailError === 'email_taken') {
+                throw new RuntimeException('The demo email is already used with a different password.');
+            }
+            throw new RuntimeException('Could not create the demo shop.');
         }
-        if ($customers !== [] || $orders !== []) {
-            throw new RuntimeException('The demo shop is only partly set up. Remove that shop from the database and run this again.');
-        }
-        seed_demo_fill();
-        return [
-            'status' => 'created',
-            'user_id' => (string) current_user_id(),
-            'tenant_id' => (string) current_tenant_id(),
-        ];
+        $created = true;
     }
+    seed_staff((string) $spec['staff_email'], (string) $spec['staff_name']);
+    if ($spec['fill'] === 'tailor') {
+        $created = seed_tailor_sample() || $created;
+    } elseif ($spec['fill'] === 'factory') {
+        $created = seed_factory_sample() || $created;
+    } elseif ($spec['fill'] === 'brand') {
+        $created = seed_brand_sample() || $created;
+    }
+    return $created;
+}
 
-    $result = business_register([
-        'business_name' => 'Kano Stitches Tailoring',
-        'owner_name' => 'Amina Bello',
+function seed_staff(string $email, string $name): void
+{
+    if (db_select('fashion_users', ['email' => $email], ['limit' => 1]) !== []) {
+        return;
+    }
+    db_insert('fashion_users', [
+        'name' => $name,
         'email' => $email,
-        'password' => $password,
-        'phone' => '08039876010',
-        'company_type' => 'tailor',
+        'password_hash' => password_hash(seed_password(), PASSWORD_DEFAULT),
+        'role' => 'staff',
+        'lang' => 'en',
+        'active' => 1,
+        'created_at' => date('Y-m-d H:i:s'),
     ]);
-    if (isset($result['errors'])) {
-        $emailError = (string) ($result['errors']['email'] ?? '');
-        if ($emailError === 'email_taken') {
-            throw new RuntimeException('The demo email is already used with a different password.');
-        }
-        throw new RuntimeException('Could not create the demo shop.');
+}
+
+function seed_tailor_sample(): bool
+{
+    $customers = db_select('fashion_customers', [], ['limit' => 50]);
+    $orders = db_select('fashion_orders', [], ['limit' => 50]);
+    if ($customers !== [] || $orders !== []) {
+        return false;
     }
     seed_demo_fill();
-    return [
-        'status' => 'created',
-        'user_id' => (string) $result['user_id'],
-        'tenant_id' => (string) $result['tenant_id'],
+    return true;
+}
+
+function seed_factory_sample(): bool
+{
+    foreach (stage_definitions() as $stage) {
+        if ((string) $stage['name'] === 'Sample line') {
+            return false;
+        }
+    }
+    $added = stage_add('Sample line');
+    if (isset($added['error'])) {
+        throw new RuntimeException('Could not save a demo production stage.');
+    }
+    return true;
+}
+
+function seed_brand_sample(): bool
+{
+    $customers = db_select('fashion_customers', [], ['limit' => 50]);
+    $orders = db_select('fashion_orders', [], ['limit' => 50]);
+    if ($customers !== [] || $orders !== []) {
+        return false;
+    }
+    $top = seed_brand_garment('sample_top', 'Sample top', 1);
+    $trouser = seed_brand_garment('sample_trouser', 'Sample trouser', 2);
+    $people = [
+        ['Demo Buyer 1', '08020000001', 'female', 'regular'],
+        ['Demo Buyer 2', '08020000002', 'male', 'vip'],
+        ['Demo Buyer 3', '08020000003', 'female', 'regular'],
     ];
+    $customerIds = [];
+    foreach ($people as $person) {
+        $created = customer_create([
+            'name' => $person[0],
+            'phone' => $person[1],
+            'gender' => $person[2],
+            'customer_type' => $person[3],
+        ]);
+        if (isset($created['errors'])) {
+            throw new RuntimeException('Could not save a demo customer.');
+        }
+        $customerIds[] = (string) $created['id'];
+    }
+    $today = new DateTimeImmutable('today');
+    $plan = [
+        [$customerIds[0], $top, '-3 days', '9000', '4000'],
+        [$customerIds[1], $trouser, '+2 days', '12000', '12000'],
+        [$customerIds[2], $top, '+6 days', '7000', ''],
+        [$customerIds[0], $trouser, '+10 days', '15000', '5000'],
+    ];
+    foreach ($plan as $row) {
+        $created = order_create([
+            'customer_id' => $row[0],
+            'due_date' => $today->modify($row[2])->format('Y-m-d'),
+            'urgent' => '',
+            'items' => [[
+                'garment_type_id' => $row[1],
+                'quantity' => '1',
+                'price' => $row[3],
+                'fabric' => 'sample cloth',
+                'notes' => '',
+            ]],
+        ]);
+        if (isset($created['errors'])) {
+            throw new RuntimeException('Could not save a demo order.');
+        }
+        if ($row[4] !== '') {
+            $paid = payment_record((string) $created['id'], $row[4], 'transfer');
+            if (isset($paid['error'])) {
+                throw new RuntimeException('Could not record a demo payment.');
+            }
+        }
+    }
+    return true;
+}
+
+function seed_brand_garment(string $code, string $name, int $sort): string
+{
+    $rows = db_select('fashion_garment_types', ['code' => $code], ['limit' => 1]);
+    if ($rows !== []) {
+        return (string) $rows[0]['id'];
+    }
+    return db_insert('fashion_garment_types', [
+        'code' => $code,
+        'name' => $name,
+        'sort_order' => $sort,
+        'active' => 1,
+        'placeholder' => 0,
+        'lead_days' => null,
+    ]);
 }
 
 function seed_demo_fill(): void
@@ -78,21 +225,17 @@ function seed_demo_fill(): void
         $garments[(string) $row['code']] = (string) $row['id'];
     }
     $kaftan = $garments['kaftan'] ?? '';
-    if ($kaftan === '') {
+    $senator = $garments['senator'] ?? '';
+    if ($kaftan === '' || $senator === '') {
         throw new RuntimeException('Could not find the tailor garment types for the demo shop.');
     }
-    $codes = ['kaftan', 'senator', 'agbada', 'shirt', 'trouser', 'gown'];
+    $codes = ['kaftan', 'senator', 'agbada', 'shirt', 'trouser', 'gown', 'kaftan', 'senator'];
     $people = [
-        ['Amina Yusuf', '08031110001', 'female', 'vip'],
-        ['Hauwa Sani', '08031110002', 'female', 'regular'],
-        ['Musa Danjuma', '08031110003', 'male', 'regular'],
-        ['Fatima Bello', '08031110004', 'female', 'vip'],
-        ['Ibrahim Lawal', '08031110005', 'male', 'regular'],
-        ['Zainab Musa', '08031110006', 'female', 'regular'],
-        ['Sani Garba', '08031110007', 'male', 'vip'],
-        ['Maryam Abdullahi', '08031110008', 'female', 'regular'],
-        ['Yusuf Danladi', '08031110009', 'male', 'regular'],
-        ['Khadija Umar', '08031110010', 'female', 'regular'],
+        ['Demo Customer 1', '08010000001', 'female', 'vip'],
+        ['Demo Customer 2', '08010000002', 'male', 'regular'],
+        ['Demo Customer 3', '08010000003', 'female', 'regular'],
+        ['Demo Customer 4', '08010000004', 'male', 'vip'],
+        ['Demo Customer 5', '08010000005', 'female', 'regular'],
     ];
     $customerIds = [];
     foreach ($people as $person) {
@@ -108,9 +251,9 @@ function seed_demo_fill(): void
         $customerIds[] = (string) $created['id'];
     }
 
-    $moves = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6];
-    $offsets = [-10, -3, -1, 0, 1, 2, 4, 7, -8, 3, 5, 6, 8, 10, 14];
-    $prices = [8000, 12000, 15000, 10000, 20000, 9000, 18000, 25000, 7000, 11000, 16000, 14000, 22000, 6000, 13000];
+    $moves = [0, 1, 2, 3, 4, 5, 6, 7];
+    $offsets = [-4, 0, 1, 2, 4, 6, 9, 14];
+    $prices = [8000, 12000, 10000, 16000, 9000, 14000, 11000, 20000];
     $fabrics = ['ankara', 'atiku', 'guinea', 'lace', 'cotton', 'silk'];
     $today = new DateTimeImmutable('today');
     $orderIds = [];
@@ -120,7 +263,7 @@ function seed_demo_fill(): void
         $created = order_create([
             'customer_id' => $customerIds[$index % count($customerIds)],
             'due_date' => $due,
-            'urgent' => $offsets[$index] < 0 && $steps < 7 && $index < 2 ? '1' : '',
+            'urgent' => $offsets[$index] < 0 ? '1' : '',
             'items' => [[
                 'garment_type_id' => $garments[$code],
                 'quantity' => '1',
@@ -139,9 +282,9 @@ function seed_demo_fill(): void
                 throw new RuntimeException('Could not move a demo order to the next stage.');
             }
         }
-        if ($index % 2 === 0) {
-            $amount = $index % 4 === 0 ? $prices[$index] : intdiv($prices[$index], 2);
-            $paid = payment_record($orderId, (string) $amount, $index % 4 === 0 ? 'cash' : 'transfer');
+        if ($index < 4) {
+            $amount = $index === 3 ? $prices[$index] : intdiv($prices[$index], 2);
+            $paid = payment_record($orderId, (string) $amount, $index === 3 ? 'cash' : 'transfer');
             if (isset($paid['error'])) {
                 throw new RuntimeException('Could not record a demo payment.');
             }
@@ -159,10 +302,19 @@ function seed_demo_fill(): void
         'cuff' => '9',
         'top_length' => '50',
     ];
-    for ($i = 0; $i < 8; $i++) {
-        $values = $fields;
-        $values['neck'] = (string) (15 + $i);
-        $saved = measurement_save($customerIds[$i], $kaftan, 'inches', $values);
+    $senatorFields = [
+        'neck' => '16',
+        'chest' => '40',
+        'shoulder' => '18',
+        'sleeve_length' => '25',
+        'length' => '42',
+    ];
+    foreach ([$customerIds[0], $customerIds[1]] as $customerId) {
+        $saved = measurement_save($customerId, $kaftan, 'inches', $fields);
+        if (isset($saved['error'])) {
+            throw new RuntimeException('Could not save a demo measurement.');
+        }
+        $saved = measurement_save($customerId, $senator, 'inches', $senatorFields);
         if (isset($saved['error'])) {
             throw new RuntimeException('Could not save a demo measurement.');
         }

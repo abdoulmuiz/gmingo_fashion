@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/modules.php';
 require_once __DIR__ . '/customers.php';
+require_once __DIR__ . '/fabric.php';
+require_once __DIR__ . '/messages.php';
+require_once __DIR__ . '/tracking.php';
 
 function order_tabs(): array
 {
@@ -89,6 +92,7 @@ function order_create(array $input): array
             'customer_supplied_fabric' => 0,
             'yards_received' => null,
             'yards_used' => null,
+            'tracking_token' => tracking_token_new(),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
         foreach ($items as $item) {
@@ -102,6 +106,7 @@ function order_create(array $input): array
                 'product_id' => null,
             ]);
         }
+        message_queue_order($orderId);
         if ($ownTransaction) {
             db_commit();
         }
@@ -266,6 +271,7 @@ function order_rows(string $filter, string $search, ?string $id, int $page = 1):
     $stageRole = order_stage_sql('role');
     [$totalSql, $paidSql] = order_money_sql();
     $sql = 'SELECT o.id, o.order_number, o.customer_id, o.due_date, o.urgent, o.created_at,
+            o.customer_supplied_fabric, o.yards_received, o.yards_used,
             c.name AS customer_name, ' . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo, '
             . $stageCode . ' AS stage_code, ' . $stageName . ' AS stage_name, ' . $stageRole . ' AS stage_role
          FROM fashion_orders o
@@ -323,6 +329,13 @@ function order_present(array $row): array
     $code = $row['stage_code'];
     $name = $row['stage_name'];
     $role = $row['stage_role'];
+    $supplied = (int) ($row['customer_supplied_fabric'] ?? 0) === 1;
+    $receivedRaw = $row['yards_received'] ?? null;
+    $usedRaw = $row['yards_used'] ?? null;
+    $receivedHundredths = $receivedRaw === null || $receivedRaw === '' ? null : (int) $receivedRaw;
+    $usedHundredths = $usedRaw === null || $usedRaw === '' ? null : (int) $usedRaw;
+    $leftHundredths = yards_left($receivedHundredths ?? 0, $usedHundredths ?? 0);
+    $stageRole = is_string($role) && in_array($role, ['open', 'ready', 'finished'], true) ? $role : null;
     return [
         'id' => (string) $row['id'],
         'order_number' => (string) $row['order_number'],
@@ -337,7 +350,12 @@ function order_present(array $row): array
         'paid' => $paid >= $total,
         'stage_code' => is_string($code) && $code !== '' ? $code : null,
         'stage_name' => is_string($name) && $name !== '' ? $name : null,
-        'stage_role' => is_string($role) && in_array($role, ['open', 'ready', 'finished'], true) ? $role : null,
+        'stage_role' => $stageRole,
+        'fabric_supplied' => $supplied,
+        'received_hundredths' => $receivedHundredths,
+        'used_hundredths' => $usedHundredths,
+        'yards_left_hundredths' => $leftHundredths,
+        'fabric_badge' => $supplied && $leftHundredths > 0 && $stageRole === 'finished',
     ];
 }
 

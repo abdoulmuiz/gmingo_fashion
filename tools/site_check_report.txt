@@ -1,0 +1,149 @@
+kind	url	user	reason
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Brand owner	fashion.orders is off but a menu link is still shown
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner	expired write changed rows: fashion_activity_log 71 -> 72
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner	expired write returned 200 instead of 402
+FAIL	http://127.0.0.1/gmingo_fashion/	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	crawl changed row counts: fashion_payment_settings 4 -> 5
+FAIL	http://127.0.0.1/gmingo_fashion/customers	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/[digits]-fe9c-4507-9ec3-beae48cad635	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 65 -> 66
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	empty wrote rows: fashion_activity_log 60 -> 65
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	empty wrote rows: fashion_activity_log 66 -> 67
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/[digits]-fe9c-4507-9ec3-beae48cad635	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 67 -> 68
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	empty wrote rows: fashion_activity_log 68 -> 69
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/[digits]-fe9c-4507-9ec3-beae48cad635	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/customers/[digits]-fe9c-4507-9ec3-beae48cad635	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Factory owner	fashion.orders is off but a menu link is still shown
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner	expired write changed rows: fashion_activity_log 70 -> 71
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner	expired write returned 200 instead of 402
+FAIL	http://127.0.0.1/gmingo_fashion/	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	crawl changed row counts: fashion_payment_settings 3 -> 4
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 56 -> 57
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	empty wrote rows: fashion_activity_log 52 -> 56
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	empty wrote rows: fashion_activity_log 57 -> 58
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 58 -> 59
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	empty wrote rows: fashion_activity_log 59 -> 60
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Factory staff English zz-check-factory-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Factory staff English zz-check-factory-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Factory staff English zz-check-factory-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory staff English zz-check-factory-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Factory staff Hausa zz-check-factory-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Factory staff Hausa zz-check-factory-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Factory staff Hausa zz-check-factory-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Factory staff Hausa zz-check-factory-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/groups	ZZ Check Tailor owner	fashion.orders is off but a menu link is still shown
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner	expired write changed rows: fashion_activity_log 69 -> 70
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner	expired write returned 200 instead of 402
+FAIL	http://127.0.0.1/gmingo_fashion/	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	crawl changed row counts: fashion_payment_settings 2 -> 3
+FAIL	http://127.0.0.1/gmingo_fashion/customers	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/6c4a2688-9146-4a13-81bd-c006b9410163	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/customers/6c4a2688-9146-4a13-81bd-c006b9410163/measurements	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/messages	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/messages/70d1aff7-4eb1-405e-b1e8-c2e4115dd369/sent	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_messages 21 -> 22
+FAIL	http://127.0.0.1/gmingo_fashion/messages/70d1aff7-4eb1-405e-b1e8-c2e4115dd369/sent	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/messages?order=ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/orders	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/fabric	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/fittings	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/invoice/share	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	5000 characters wrote rows: fashion_messages 23 -> 24
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/invoice/share	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_messages 22 -> 23
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/invoice/share	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	script text wrote rows: fashion_messages 24 -> 25
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/invoice/share	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/late	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/link	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	5000 characters wrote rows: fashion_messages 19 -> 20
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/link	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_messages 18 -> 19
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/link	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	script text wrote rows: fashion_messages 20 -> 21
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/link	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/ready	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_messages 17 -> 18
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/messages/ready	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/payments	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/stage	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	5000 characters wrote rows: fashion_stage_events 67 -> 68
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/stage	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_stage_events 66 -> 67
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/stage	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	script text wrote rows: fashion_stage_events 68 -> 69
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/stage	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d/tracking	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 48 -> 49
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_activity_log 43 -> 48
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_activity_log 49 -> 50
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/6c4a2688-9146-4a13-81bd-c006b9410163	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/messages	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/messages?order=ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	5000 characters wrote rows: fashion_activity_log 50 -> 51
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	empty wrote rows: fashion_activity_log 51 -> 52
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/customers/6c4a2688-9146-4a13-81bd-c006b9410163	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/messages	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/messages?order=ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	visible link returned 403
+FAIL	http://127.0.0.1/gmingo_fashion/customers/6c4a2688-9146-4a13-81bd-c006b9410163	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]
+FAIL	http://127.0.0.1/gmingo_fashion/language	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/logout	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	wrong CSRF returned status 500
+FAIL	http://127.0.0.1/gmingo_fashion/messages	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/messages?order=ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/orders/ee7f8273-a9f6-4d15-aff9-02a562d6c94d	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	full domain in href https://wa.me/[digits]?text=Hello%20ZZ%20Check%20Customer%2C%20ZZ%20Check%20Tailor%20has%20order%20TK1001.%20Due%2020%20December%202026.%20Balance%20%E2%82%A620.00.%20Deposit%20due%20%E2%82%A60.00.%20Fitting%20.%20%2Fgmingo_fashion%2Ftrack%2F7f8c1b0afa1a1e7a88371e8e46cc1558
+FAIL	http://127.0.0.1/gmingo_fashion/settings	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	visible link returned 403
+WARN	/settings	ZZ Check Brand owner	fashion.online_payments has no GET page to check
+WARN	/settings	ZZ Check Brand owner	fashion.sales has no GET page to check
+WARN	/settings	ZZ Check Brand owner	fashion.staff has no GET page to check
+WARN	http://127.0.0.1/gmingo_fashion/orders/new	ZZ Check Brand owner	sample order was not created
+WARN	/gmingo_fashion/messages	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Brand owner English zz-check-brand-owner@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Brand owner Hausa zz-check-brand-owner@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Brand staff English zz-check-brand-staff@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Brand staff Hausa zz-check-brand-staff@gmingo.test	crawl stopped after 80 pages
+WARN	/settings	ZZ Check Factory owner	fashion.online_payments has no GET page to check
+WARN	/settings	ZZ Check Factory owner	fashion.sales has no GET page to check
+WARN	/settings	ZZ Check Factory owner	fashion.staff has no GET page to check
+WARN	/gmingo_fashion/stock	ZZ Check Factory owner English zz-check-factory-owner@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Factory owner Hausa zz-check-factory-owner@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Factory staff English zz-check-factory-staff@gmingo.test	GET form has no CSRF field
+WARN	/gmingo_fashion/stock	ZZ Check Factory staff Hausa zz-check-factory-staff@gmingo.test	GET form has no CSRF field
+WARN	/settings	ZZ Check Tailor owner	fashion.online_payments has no GET page to check
+WARN	/settings	ZZ Check Tailor owner	fashion.sales has no GET page to check
+WARN	/settings	ZZ Check Tailor owner	fashion.staff has no GET page to check
+WARN	/gmingo_fashion/messages	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Tailor owner English zz-check-tailor-owner@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Tailor owner Hausa zz-check-tailor-owner@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Tailor staff English zz-check-tailor-staff@gmingo.test	crawl stopped after 80 pages
+WARN	/gmingo_fashion/messages	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	GET form has no CSRF field
+WARN	http://127.0.0.1/gmingo_fashion/	ZZ Check Tailor staff Hausa zz-check-tailor-staff@gmingo.test	crawl stopped after 80 pages
+Failures: 113. Warnings: 34.

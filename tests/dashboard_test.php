@@ -154,12 +154,12 @@ module_save([
     'fashion.inventory',
 ]);
 $withStock = dashboard_home(17);
-check(dashboard_test_value($withStock, 'card_low_stock') === null, 'inventory on does not invent a low stock count of 0');
+check_eq(dashboard_test_value($withStock, 'card_low_stock'), '0', 'inventory on shows a real low stock count of 0');
 check_eq(dashboard_test_value($withStock, 'card_active'), '4', 'turning inventory on leaves the order counts');
 ob_start();
 home_show();
 $stockHtml = (string) ob_get_clean();
-check(!str_contains($stockHtml, t('card_low_stock')), 'inventory on still leaves the low stock card off the home screen');
+check(str_contains($stockHtml, t('card_low_stock')), 'inventory on shows the low stock card');
 check(!str_contains($stockHtml, t('inventory_later')), 'inventory on does not show the inventory later note');
 
 module_save([
@@ -177,13 +177,13 @@ check(dashboard_test_value($ordersOff, 'card_ready') === null, 'ready for pickup
 check($ordersOff['attention'] === [], 'the urgent list hides when orders is off');
 check($ordersOff['orders_on'] === false, 'the order list is closed');
 check_eq(dashboard_test_value($ordersOff, 'card_money'), money(0), 'outstanding money stays on the screen without crashing');
-check(dashboard_test_value($ordersOff, 'card_low_stock') === null, 'low stock stays off without a real stock count');
+check_eq(dashboard_test_value($ordersOff, 'card_low_stock'), '0', 'low stock stays on the screen when inventory is on');
 ob_start();
 home_show();
 $ordersOffHtml = (string) ob_get_clean();
 check(!str_contains($ordersOffHtml, t('needs_attention')), 'the urgent list leaves the home screen');
 check(str_contains($ordersOffHtml, t('card_money')), 'outstanding money stays visible');
-check(!str_contains($ordersOffHtml, t('card_low_stock')), 'the low stock card stays off while inventory is on');
+check(str_contains($ordersOffHtml, t('card_low_stock')), 'the low stock card stays on while inventory is on');
 check(!str_contains($ordersOffHtml, t('inventory_later')), 'the inventory later note stays off while inventory is on');
 
 module_save([
@@ -238,11 +238,11 @@ check(isset($factory['tenant_id']), 'a factory can open the home screen');
 $factoryHome = dashboard_home(16);
 check(dashboard_test_value($factoryHome, 'card_active') === null, 'a factory without orders has no order cards');
 check_eq(dashboard_test_value($factoryHome, 'card_money'), money(0), 'a factory still shows outstanding money');
-check(dashboard_test_value($factoryHome, 'card_low_stock') === null, 'a factory does not show a fake low stock count');
+check_eq(dashboard_test_value($factoryHome, 'card_low_stock'), '0', 'a factory shows a real low stock count of 0');
 ob_start();
 home_show();
 $factoryHtml = (string) ob_get_clean();
-check(!str_contains($factoryHtml, t('card_low_stock')), 'a factory home screen has no low stock card');
+check(str_contains($factoryHtml, t('card_low_stock')), 'a factory home screen shows the low stock card');
 check(!str_contains($factoryHtml, t('inventory_later')), 'a factory home screen does not show the inventory later note');
 check(str_contains($factoryHome['greeting'], 'Good afternoon, Bala'), 'the factory greeting follows the afternoon');
 $GLOBALS['gmingo_now'] = '2026-10-12 00:30:00';

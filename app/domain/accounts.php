@@ -54,7 +54,7 @@ function business_register(array $input): array
             'id' => $tenantId,
             'name' => $business,
             'phone' => $phone,
-            'deposit_percent' => null,
+            'deposit_percent' => 0,
             'capacity_max' => null,
             'payment_bank' => null,
             'payment_account' => null,

@@ -27,9 +27,14 @@ try {
 }
 
 if ($result['status'] === 'exists') {
-    echo "The demo shop is already set up. Log in as demo@gmingo.test with the password: password\n";
-    exit(0);
+    echo "The demo shops are already set up.\n";
+} else {
+    echo "Demo shops ready: Kano Stitches Tailoring, Demo Factory, and Demo Brand.\n";
 }
-
-echo "Demo shop ready: Kano Stitches Tailoring.\n";
-echo "Log in as demo@gmingo.test with the password: password\n";
+echo "Password for every demo login: password\n";
+echo "Tailor owner: demo@gmingo.test\n";
+echo "Tailor staff: tailor-staff@gmingo.test\n";
+echo "Factory owner: factory@gmingo.test\n";
+echo "Factory staff: factory-staff@gmingo.test\n";
+echo "Brand owner: brand@gmingo.test\n";
+echo "Brand staff: brand-staff@gmingo.test\n";

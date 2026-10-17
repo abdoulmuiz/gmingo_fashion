@@ -130,6 +130,10 @@ function db_append_only(string $table): bool
         'fashion_measurements',
         'fashion_stock_movements',
         'fashion_activity_log',
+        'fashion_order_fabric_log',
+        'fashion_messages',
+        'fashion_receipts',
+        'fashion_receipt_voids',
     ], true);
 }
 
@@ -385,6 +389,35 @@ function paystack_platform_query(string $sql, array $params = []): array
     db_bind($statement, $params);
     $statement->execute();
     return $statement->fetchAll();
+}
+
+function tracking_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    if ($caller !== 'tracking_bind' || !str_ends_with($file, '/app/domain/tracking.php')) {
+        throw new RuntimeException('This query is only for tracking.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $allowed = [
+        'SELECT hits, window_start FROM fashion_track_limits WHERE ip_key = :ip_key LIMIT 1',
+        'SELECT tenant_id, id FROM fashion_orders WHERE tracking_token = :token LIMIT 1',
+        'INSERT INTO fashion_track_limits (id, tenant_id, ip_key, hits, window_start) VALUES (:id, :tenant_id, :ip_key, :hits, :window_start)',
+        'UPDATE fashion_track_limits SET hits = :hits, window_start = :window_start WHERE ip_key = :ip_key',
+    ];
+    if (!in_array($sql, $allowed, true)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    if (preg_match('/^\s*select\b/i', $sql) === 1) {
+        return $statement->fetchAll();
+    }
+    return [];
 }
 
 function platform_query_unsafe(string $sql, array $params = []): array

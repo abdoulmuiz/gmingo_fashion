@@ -38,6 +38,11 @@ function shop_seed_defaults(string $companyType): void
             'role' => $role,
         ]);
     }
+    $cutting = db_select('fashion_stage_definitions', ['name' => 'Cutting'], ['limit' => 1]);
+    db_update('fashion_tenants', [
+        'deposit_percent' => 0,
+        'deposit_stage_id' => $cutting === [] ? null : (string) $cutting[0]['id'],
+    ], ['id' => (string) current_tenant_id()]);
 
     $garments = $companyType === 'tailor' ? [
         ['kaftan', 'Kaftan', 0, [
@@ -109,6 +114,10 @@ function shop_seed_defaults(string $companyType): void
 
     db_insert('fashion_order_counters', [
         'prefix' => $companyType === 'tailor' ? 'TK' : 'OR',
+        'last_number' => 1000,
+    ]);
+    db_insert('fashion_receipt_counters', [
+        'prefix' => 'RC',
         'last_number' => 1000,
     ]);
 }

@@ -17,6 +17,10 @@ return [
     // Site address used for Paystack until the shop has its own domain.
     // Paystack mode cannot be switched on while this is empty.
     'payment_placeholder_domain' => '',
+    // Public origin for tracking links sent on WhatsApp, with no path.
+    // Example: https://stitches.example
+    // Empty, localhost, or an IP address means the link only works on this computer.
+    'public_base_url' => '',
     // Paystack API address. Leave this as Paystack's own address.
     'paystack_base_url' => 'https://api.paystack.co',
     'db' => [

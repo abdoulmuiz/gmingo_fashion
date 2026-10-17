@@ -24,6 +24,10 @@ function customer_create(array $input): array
     if (!in_array($type, ['vip', 'regular'], true)) {
         $errors['customer_type'] = 'required';
     }
+    $lang = strtolower(trim((string) ($input['lang'] ?? '')));
+    if ($lang !== '' && !in_array($lang, ['en', 'ha'], true)) {
+        $errors['lang'] = 'required';
+    }
     if ($errors !== []) {
         return ['errors' => $errors];
     }
@@ -33,6 +37,7 @@ function customer_create(array $input): array
         'gender' => $gender,
         'customer_type' => $type,
         'messages_opt_in' => 0,
+        'lang' => $lang === '' ? null : $lang,
         'created_at' => date('Y-m-d H:i:s'),
     ]);
     return ['id' => $id];
