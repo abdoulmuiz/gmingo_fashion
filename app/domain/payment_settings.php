@@ -104,39 +104,40 @@ function payment_provider(): PaymentProvider
     return new ManualProvider();
 }
 
-function payment_settings_ensure(): array
+function payment_settings_blank(): array
 {
-    require_module('fashion.finance');
-    $rows = db_select('fashion_payment_settings', [], ['limit' => 1]);
-    if ($rows !== []) {
-        return $rows[0];
-    }
-    $userId = current_user_id();
-    if ($userId === null) {
-        throw new RuntimeException('Missing session.');
-    }
-    $id = db_insert('fashion_payment_settings', [
+    return [
+        'id' => '',
         'mode' => 'manual',
         'paystack_public_key' => '',
         'paystack_secret_key_encrypted' => '',
         'paystack_key_last4' => '',
-        'webhook_token' => bin2hex(random_bytes(16)),
+        'webhook_token' => '',
         'connected_at' => null,
-        'updated_by' => $userId,
-    ]);
-    $created = db_select('fashion_payment_settings', ['id' => $id], ['limit' => 1]);
-    return $created[0];
+        'updated_by' => '',
+    ];
+}
+
+function payment_settings_read(): array
+{
+    require_module('fashion.finance');
+    $rows = db_select('fashion_payment_settings', [], ['limit' => 1]);
+    if ($rows === []) {
+        return payment_settings_blank();
+    }
+    return $rows[0];
 }
 
 function payment_settings_view(): array
 {
-    $row = payment_settings_ensure();
+    $row = payment_settings_read();
     $last4 = (string) $row['paystack_key_last4'];
+    $token = (string) $row['webhook_token'];
     return [
         'mode' => (string) $row['mode'] === 'paystack' ? 'paystack' : 'manual',
         'public_key' => (string) $row['paystack_public_key'],
         'secret_mask' => $last4 === '' ? '' : '••••' . $last4,
-        'webhook_url' => url('/webhooks/paystack/' . (string) $row['webhook_token']),
+        'webhook_url' => $token === '' ? '' : url('/webhooks/paystack/' . $token),
         'links_enabled' => payment_links_enabled(),
         'domain_ready' => payment_placeholder_domain() !== '',
     ];
@@ -157,7 +158,8 @@ function payment_settings_save(string $mode, string $publicKey, string $secret):
     }
     $publicKey = trim($publicKey);
     $secret = trim($secret);
-    $row = payment_settings_ensure();
+    $row = payment_settings_read();
+    $persisted = (string) $row['id'] !== '';
     $keyUpdates = [];
     if ($mode === 'paystack') {
         $nextPublic = $publicKey !== '' ? $publicKey : (string) $row['paystack_public_key'];
@@ -183,17 +185,28 @@ function payment_settings_save(string $mode, string $publicKey, string $secret):
         }
     }
     $modeChanged = (string) $row['mode'] !== $mode;
-    if (!$modeChanged && $keyUpdates === []) {
+    if ($persisted && !$modeChanged && $keyUpdates === []) {
         return ['ok' => true];
     }
     $userId = current_user_id();
     if ($userId === null) {
         throw new RuntimeException('Missing session.');
     }
-    db_update('fashion_payment_settings', array_merge($keyUpdates, [
+    $fields = array_merge($keyUpdates, [
         'mode' => $mode,
         'updated_by' => $userId,
-    ]), ['id' => $row['id']]);
+    ]);
+    if ($persisted) {
+        db_update('fashion_payment_settings', $fields, ['id' => $row['id']]);
+    } else {
+        db_insert('fashion_payment_settings', array_merge([
+            'paystack_public_key' => (string) $row['paystack_public_key'],
+            'paystack_secret_key_encrypted' => (string) $row['paystack_secret_key_encrypted'],
+            'paystack_key_last4' => (string) $row['paystack_key_last4'],
+            'webhook_token' => bin2hex(random_bytes(16)),
+            'connected_at' => $row['connected_at'],
+        ], $fields));
+    }
     if ($modeChanged) {
         payment_settings_log('payment_mode', $mode === 'paystack' ? 1 : 0);
     }
