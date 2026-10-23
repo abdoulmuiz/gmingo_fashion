@@ -41,6 +41,9 @@ function router_dispatch(string $method, string $path): void
                 $params[$key] = $value;
             }
         }
+        if ($method === 'POST' && !str_starts_with($pattern, '/webhooks/')) {
+            csrf_check();
+        }
         $handler($params);
         return;
     }

@@ -27,9 +27,20 @@ function csrf_field(): string
 
 function csrf_check(): void
 {
-    $sent = $_POST['csrf'] ?? '';
-    $cookie = $_COOKIE['csrf_token'] ?? '';
-    if (!is_string($sent) || !is_string($cookie) || $cookie === '' || !hash_equals($cookie, $sent)) {
-        throw new HttpException(t('csrf_failed'), 419);
+    $sent = $_POST['csrf'] ?? null;
+    $cookie = $_COOKIE['csrf_token'] ?? null;
+    $sentOk = is_string($sent) && preg_match('/^[a-f0-9]{64}$/', $sent) === 1;
+    $cookieOk = is_string($cookie) && preg_match('/^[a-f0-9]{64}$/', $cookie) === 1;
+    if ($sentOk && $cookieOk && hash_equals($cookie, $sent)) {
+        return;
     }
+    if (!$sentOk) {
+        $reason = 'missing';
+    } elseif (!$cookieOk) {
+        $reason = 'no_cookie';
+    } else {
+        $reason = 'mismatch';
+    }
+    security_event('csrf_failed_' . $reason);
+    throw new HttpException(t('csrf_failed'), 403);
 }

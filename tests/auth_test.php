@@ -159,7 +159,7 @@ $_POST = ['csrf' => 'not-the-token', 'lang' => 'en', 'back' => 'https://evil.exa
 check_throws(
     fn () => lang_submit(),
     HttpException::class,
-    'The form expired. Go back and try again.'
+    'This page expired. Go back, refresh it and try again.'
 );
 
 auth_logout();

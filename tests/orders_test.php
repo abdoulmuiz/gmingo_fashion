@@ -296,6 +296,7 @@ foreach (['/orders', '/orders/new', '/orders/' . $first['id']] as $path) {
         check($e->status() === 403, $path . ' returns 403');
     }
 }
+$_POST = ['csrf' => csrf_token()];
 try {
     router_dispatch('POST', '/orders');
     check(false, 'saving an order stays closed');

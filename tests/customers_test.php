@@ -136,7 +136,7 @@ $_COOKIE['lang'] = 'en';
 check_throws(
     static fn () => customers_save(),
     HttpException::class,
-    'The form expired. Go back and try again.'
+    'This page expired. Go back, refresh it and try again.'
 );
 
 auth_login((string) $shop['user_id'], (string) $shop['tenant_id']);
@@ -162,6 +162,7 @@ foreach (['/customers', '/customers/new', '/customers/' . $amina['id']] as $path
         check($e->status() === 403, $path . ' returns 403');
     }
 }
+$_POST = ['csrf' => csrf_token()];
 try {
     router_dispatch('POST', '/customers');
     check(false, 'saving a customer stays closed');
