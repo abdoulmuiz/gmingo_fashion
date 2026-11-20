@@ -1,16 +1,8 @@
 <section class="card">
     <h1><?= e(t('more')) ?></h1>
-    <p><a href="<?= e(url('/settings')) ?>"><?= e(t('settings')) ?></a></p>
-    <?php if (module_enabled('fashion.orders')): ?>
-        <p><a href="<?= e(url('/calendar')) ?>"><?= e(t('calendar')) ?></a></p>
-    <?php endif; ?>
-    <?php if (module_enabled('fashion.communication')): ?>
-        <p><a href="<?= e(url('/messages')) ?>"><?= e(t('messages')) ?></a></p>
-    <?php endif; ?>
-    <p><a href="<?= e(url('/groups')) ?>"><?= e(t('groups')) ?></a></p>
-    <?php if (module_enabled('fashion.inventory')): ?>
-        <p><a href="<?= e(url('/stock')) ?>"><?= e(t('stock')) ?></a></p>
-    <?php endif; ?>
+    <?php foreach (menu_links('more') as [$path, $label]): ?>
+        <p><a href="<?= e(url($path)) ?>"><?= e(t($label)) ?></a></p>
+    <?php endforeach; ?>
     <form method="post" action="<?= e(url('/language')) ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="back" value="<?= e(request_path()) ?>">

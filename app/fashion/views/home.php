@@ -6,7 +6,9 @@
 <?php if ($empty): ?>
     <section class="card">
         <p><?= e(t('switch_on_module')) ?></p>
-        <p><a href="<?= e(url('/settings')) ?>"><?= e(t('settings')) ?></a></p>
+        <?php if (can_access('/settings')): ?>
+            <p><a href="<?= e(url('/settings')) ?>"><?= e(t('settings')) ?></a></p>
+        <?php endif; ?>
     </section>
 <?php endif; ?>
 <?php if ($cards !== []): ?>

@@ -2,27 +2,13 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/domain/access.php';
+
 /** @var string $title */
 /** @var string $view_file */
 $current = request_path();
 $showNav = !in_array($current, ['/login', '/register', '/pay/return'], true);
-$navItems = [];
-if ($showNav) {
-    $nav = [
-        ['/', 'home', null],
-        ['/orders', 'orders', 'fashion.orders'],
-        ['/board', 'board', 'fashion.production'],
-        ['/customers', 'customers', 'fashion.orders'],
-        ['/outstanding', 'balances', 'fashion.finance'],
-        ['/more', 'more', null],
-    ];
-    foreach ($nav as [$path, $label, $module]) {
-        if ($module !== null && !module_enabled($module)) {
-            continue;
-        }
-        $navItems[] = [$path, $label];
-    }
-}
+$navItems = $showNav ? menu_links('nav') : [];
 ?><!doctype html>
 <html lang="<?= e(current_lang()) ?>">
 <head>

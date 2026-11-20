@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/domain/access.php';
 require_once __DIR__ . '/fashion/controllers/auth_pages.php';
 require_once __DIR__ . '/fashion/controllers/home.php';
 require_once __DIR__ . '/fashion/controllers/customers.php';
@@ -20,7 +21,7 @@ require_once __DIR__ . '/fashion/controllers/messages.php';
 require_once __DIR__ . '/fashion/controllers/tracking.php';
 
 route('GET', '/', function (): void {
-    require_login();
+    require_access('/');
     http_response_code(200);
     home_show();
 });
@@ -74,7 +75,7 @@ route('POST', '/track/{token}/language', function (array $params): void {
 });
 
 route('GET', '/groups', function (): void {
-    require_module('fashion.orders');
+    require_access('/groups');
     groups_index();
 });
 
@@ -109,7 +110,7 @@ route('POST', '/groups/{id}/payments/{payment}/reverse', function (array $params
 });
 
 route('GET', '/stock', function (): void {
-    require_module('fashion.inventory');
+    require_access('/stock');
     stock_index();
 });
 
@@ -134,7 +135,7 @@ route('POST', '/stock/{id}/move', function (array $params): void {
 });
 
 route('GET', '/calendar', function (): void {
-    require_module('fashion.orders');
+    require_access('/calendar');
     calendar_show();
 });
 
@@ -154,7 +155,7 @@ route('POST', '/orders/{id}/fittings/{fitting}/status', function (array $params)
 });
 
 route('GET', '/orders', function (): void {
-    require_module('fashion.orders');
+    require_access('/orders');
     orders_index();
 });
 
@@ -263,17 +264,17 @@ route('GET', '/pay/return', function (): void {
 });
 
 route('GET', '/outstanding', function (): void {
-    require_module('fashion.finance');
+    require_access('/outstanding');
     outstanding_show();
 });
 
 route('GET', '/board', function (): void {
-    require_module('fashion.production');
+    require_access('/board');
     board_show();
 });
 
 route('GET', '/customers', function (): void {
-    require_module('fashion.orders');
+    require_access('/customers');
     customers_index();
 });
 
@@ -298,6 +299,7 @@ route('POST', '/customers/{id}/measurements', function (array $params): void {
 });
 
 route('GET', '/settings', function (): void {
+    require_access('/settings');
     settings_form();
 });
 
@@ -306,6 +308,7 @@ route('POST', '/settings', function (): void {
 });
 
 route('GET', '/settings/payments', function (): void {
+    require_access('/settings/payments');
     payment_settings_form();
 });
 
@@ -314,6 +317,7 @@ route('POST', '/settings/payments', function (): void {
 });
 
 route('GET', '/settings/stages', function (): void {
+    require_access('/settings/stages');
     stages_form();
 });
 
@@ -322,6 +326,7 @@ route('POST', '/settings/stages', function (): void {
 });
 
 route('GET', '/settings/garments', function (): void {
+    require_access('/settings/garments');
     garments_form();
 });
 
@@ -334,7 +339,7 @@ route('POST', '/settings/garments', function (): void {
 });
 
 route('GET', '/messages', function (): void {
-    require_module('fashion.communication');
+    require_access('/messages');
     messages_index();
 });
 
@@ -379,6 +384,6 @@ route('POST', '/orders/{id}/tracking', function (array $params): void {
 });
 
 route('GET', '/more', function (): void {
-    require_login();
+    require_access('/more');
     render('more', ['title' => t('more')]);
 });

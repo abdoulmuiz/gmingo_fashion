@@ -52,13 +52,7 @@
         </label>
         <button class="btn" type="submit"><?= e(t('save')) ?></button>
     </form>
-    <?php if (module_enabled('fashion.finance')): ?>
-        <p><a href="<?= e(url('/settings/payments')) ?>"><?= e(t('payment_settings')) ?></a></p>
-    <?php endif; ?>
-    <?php if (module_enabled('fashion.production')): ?>
-        <p><a href="<?= e(url('/settings/stages')) ?>"><?= e(t('stages_settings')) ?></a></p>
-    <?php endif; ?>
-    <?php if (module_enabled('fashion.measurements')): ?>
-        <p><a href="<?= e(url('/settings/garments')) ?>"><?= e(t('garment_settings')) ?></a></p>
-    <?php endif; ?>
+    <?php foreach (menu_links('settings') as [$path, $label]): ?>
+        <p><a href="<?= e(url($path)) ?>"><?= e(t($label)) ?></a></p>
+    <?php endforeach; ?>
 </section>
