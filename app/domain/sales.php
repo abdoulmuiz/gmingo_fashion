@@ -135,12 +135,15 @@ function sale_create(array $input): array
                 'sale',
                 'Sale ' . $saleId
             );
-        } elseif (module_enabled('fashion.inventory')) {
-            // Prefer finished-goods item with same name if linked later; optional no-op.
         }
         db_commit();
     } catch (Throwable $e) {
-        db_rollback();
+        if (db()->inTransaction()) {
+            db_rollback();
+        }
+        if ($e instanceof RuntimeException && $e->getMessage() === 'stock_below_zero') {
+            return ['errors' => ['form' => 'stock_below_zero']];
+        }
         throw $e;
     }
     return ['sale_id' => $saleId, 'total_kobo' => $lineTotal];

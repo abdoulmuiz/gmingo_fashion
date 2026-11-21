@@ -82,14 +82,31 @@ function account_billing_return_show(): void
 {
     require_login();
     $reference = trim((string) ($_GET['reference'] ?? $_GET['trxref'] ?? ''));
-    $status = billing_return_status($reference);
+    $status = billing_return_peek($reference);
+    render('account/billing_return', [
+        'title' => t('subscription_billing_return'),
+        'reference' => $reference,
+        'status' => $status,
+    ]);
+}
+
+function account_billing_verify_submit(): void
+{
+    require_login();
+    csrf_check();
+    if (!user_can('billing.manage')) {
+        http_response_code(403);
+        throw new HttpException(t('not_allowed'), 403);
+    }
+    $reference = trim((string) ($_POST['reference'] ?? ''));
+    $status = billing_verify_reference($reference);
     if ($status === 'paid') {
         flash_set('success', t('subscription_payment_received'));
         redirect('/');
     }
     if ($status === 'waiting') {
         flash_set('error', t('subscription_payment_waiting'));
-        redirect('/account/subscription');
+        redirect('/account/billing/return?reference=' . rawurlencode($reference));
     }
     flash_set('error', t('subscription_payment_failed'));
     redirect('/account/subscription');

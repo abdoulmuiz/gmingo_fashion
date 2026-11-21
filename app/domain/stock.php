@@ -39,19 +39,51 @@ function stock_post_movement(string $itemId, int $changeHundredths, string $reas
     if ($userId === null || !is_uuid($userId)) {
         throw new RuntimeException('Missing session.');
     }
-    $data = [
-        'item_id' => $itemId,
-        'change_hundredths' => $changeHundredths,
-        'reason' => $reason,
-        'order_id' => $orderId,
-        'user_id' => $userId,
-        'note' => $note,
-        'created_at' => app_now()->format('Y-m-d H:i:s'),
-    ];
-    if ($branchId !== null) {
-        $data['branch_id'] = $branchId;
+    $ownTx = !db()->inTransaction();
+    if ($ownTx) {
+        db_begin();
     }
-    return db_insert('fashion_stock_movements', $data);
+    try {
+        $locked = db_query(
+            'SELECT id FROM fashion_stock_items WHERE tenant_id = :tenant_id AND id = :item_id FOR UPDATE',
+            ['item_id' => $itemId]
+        );
+        if ($locked === []) {
+            throw new HttpException(t('not_found'), 404);
+        }
+        $sumRows = db_query(
+            'SELECT COALESCE(SUM(change_hundredths), 0) AS qty
+             FROM fashion_stock_movements
+             WHERE tenant_id = :tenant_id AND item_id = :item_id',
+            ['item_id' => $itemId]
+        );
+        $current = (int) ($sumRows[0]['qty'] ?? 0);
+        if ($current + $changeHundredths < 0) {
+            throw new RuntimeException('stock_below_zero');
+        }
+        $data = [
+            'item_id' => $itemId,
+            'change_hundredths' => $changeHundredths,
+            'reason' => $reason,
+            'order_id' => $orderId,
+            'user_id' => $userId,
+            'note' => $note,
+            'created_at' => app_now()->format('Y-m-d H:i:s'),
+        ];
+        if ($branchId !== null) {
+            $data['branch_id'] = $branchId;
+        }
+        $id = db_insert('fashion_stock_movements', $data);
+        if ($ownTx) {
+            db_commit();
+        }
+        return $id;
+    } catch (Throwable $e) {
+        if ($ownTx && db()->inTransaction()) {
+            db_rollback();
+        }
+        throw $e;
+    }
 }
 
 function stock_hundredths(string $raw, bool $allowNegative = false): ?int
@@ -322,44 +354,18 @@ function stock_adjust(string $itemId, array $input): array
         }
         $orderId = $orderRaw;
     }
-    $userId = current_user_id();
-    if ($userId === null) {
-        throw new RuntimeException('Missing session.');
-    }
-    db_begin();
     try {
-        $locked = db_query(
-            'SELECT id FROM fashion_stock_items WHERE tenant_id = :tenant_id AND id = :item_id FOR UPDATE',
-            ['item_id' => $itemId]
+        $id = stock_post_movement(
+            $itemId,
+            $change,
+            $reason,
+            $note === '' ? null : $note,
+            $orderId
         );
-        if ($locked === []) {
-            db_rollback();
-            http_response_code(404);
-            throw new HttpException(t('not_found'), 404);
-        }
-        $sumRows = db_query(
-            'SELECT COALESCE(SUM(change_hundredths), 0) AS qty
-             FROM fashion_stock_movements
-             WHERE tenant_id = :tenant_id AND item_id = :item_id',
-            ['item_id' => $itemId]
-        );
-        $current = (int) ($sumRows[0]['qty'] ?? 0);
-        if ($current + $change < 0) {
-            db_rollback();
+    } catch (RuntimeException $e) {
+        if ($e->getMessage() === 'stock_below_zero') {
             return ['error' => 'stock_below_zero'];
         }
-        $id = db_insert('fashion_stock_movements', [
-            'item_id' => $itemId,
-            'change_hundredths' => $change,
-            'reason' => $reason,
-            'order_id' => $orderId,
-            'user_id' => $userId,
-            'note' => $note === '' ? null : $note,
-            'created_at' => app_now()->format('Y-m-d H:i:s'),
-        ]);
-        db_commit();
-    } catch (Throwable $e) {
-        db_rollback();
         throw $e;
     }
     return ['id' => $id, 'change_hundredths' => $change];

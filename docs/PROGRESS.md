@@ -4,23 +4,27 @@
 
 | Field | Value |
 | --- | --- |
-| Completed phases | 1–18 |
-| Current phase | None — roadmap complete |
-| Current milestone | Release-ready integration |
+| Completed phases | 1–17 (Phase 16 Tailwind build done; UI migration partial) |
+| Current phase | 18 — final integration / release readiness |
+| Current milestone | Release-readiness remediation verified; awaiting release-commit approval |
 | Branch | `feature/phase-2-saas-foundation` |
 
 ## Pending
 
-- Optional follow-ups: staff attendance/pay history, richer analytics, live WhatsApp send for broadcasts.
+- Release commit (only when explicitly approved).
+- Optional follow-ups: staff attendance/pay history, richer analytics, live WhatsApp send for broadcasts, broader Tailwind screen migration.
 
-## Known issues
+## Known issues / limitations
 
 - Onboarding logo uploads require a real multipart file; branding colours work without a logo.
-- Full `php tests/run.php` remains slow (~10+ minutes), especially menu access combinations.
+- Full `php tests/run.php` is slow (~10+ minutes), especially menu access combinations.
 - Storefront online sales deduct stock only when the product has a linked `stock_item_id` and inventory is enabled.
+- Product “variants” are size/colour JSON lists on `fashion_products`, not a separate variant inventory table.
+- Most screens still use legacy `app.css`; only selected screens use Tailwind utilities.
+- True multi-process concurrent stock races rely on MySQL `FOR UPDATE` in `stock_post_movement`; automated tests cover sequential conflicting deductions.
 
 ## Next actions
 
-1. Run full `php tests/run.php` on a quiet machine before merge.
-2. Commit when asked; push/PR when asked.
-3. Configure production `config/config.php` and SaaS Paystack keys per `docs/SECURITY.md`.
+1. Await approval for a release commit after the final verification report.
+2. Configure production `config/config.php` with a strong `platform_admin_password` (12+ chars, not a blocked default) and SaaS Paystack keys per `docs/SECURITY.md`.
+3. Run `npm run build:css` on a build machine when changing Tailwind-using views; deploy compiled `public/assets/tailwind.css`.

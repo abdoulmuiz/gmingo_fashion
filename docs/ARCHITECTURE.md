@@ -75,18 +75,21 @@ Platform (Gmingo) Paystack keys in config — not shop `fashion_payment_settings
 | `fashion_subscription_checkouts` | Mutable pending/paid checkout intents |
 | `app/payments/SaasPaystack.php` | Initialize / verify / webhook parse |
 | `app/domain/billing.php` | Owner checkout start, fulfill, webhook |
-| `/webhooks/saas-paystack` | charge.success for `sb…` references |
-| `/account/billing/return` | Browser return verify |
+| `/webhooks/saas-paystack` | Authoritative fulfill on charge.success for `sb…` references |
+| `/account/billing/return` | GET peek only (pending / paid / failed UI) |
+| `POST /account/billing/verify` | Optional owner-triggered verify (CSRF + server-side Paystack verify) |
 
-Successful fulfill calls `subscription_fulfill_checkout` → activate or renew, then append-only `fashion_subscription_payments`. Manual renew on the account page stays available when SaaS keys are unset.
+Successful fulfill calls `subscription_fulfill_checkout` → activate or renew, then append-only `fashion_subscription_payments`. Fulfillment is idempotent. Manual renew on the account page stays available when SaaS keys are unset.
 
 ## Platform administration (Phase 5)
 
 Fixed platform tenant id (`subscription_platform_tenant_id()`). Operator users have role `platform_admin` and sign in to `/platform`.
 
+Bootstrap requires a securely configured `platform_admin_password` (no empty/default/`password` values). New platform admins are created with `password_must_change = 1` until `/platform/password` succeeds. Seed refuses to run without a strong password.
+
 Cross-tenant reads use `admin_platform_query` (only from `app/domain/platform.php`). Mutations bind the target shop with `auth_bind_tenant()` then call existing subscription lifecycle helpers.
 
-Routes: `/platform`, `/platform/plans`, `/platform/tenants/{id}` (suspend / reactivate / change plan).
+Routes: `/platform`, `/platform/plans`, `/platform/tenants/{id}` (suspend / reactivate / change plan), `/platform/password`.
 
 ## Onboarding (Phase 3)
 
@@ -104,7 +107,7 @@ Steps: business → contact → branding → preferences → staff → inventory
 | Purchasing | `fashion_suppliers`, `fashion_purchase_orders`, `/purchasing` |
 | Expenses | existing `fashion_expenses`, `/expenses` |
 
-Sales and purchase receiving post append-only `fashion_stock_movements`.
+Sales and purchase receiving post append-only `fashion_stock_movements`. All movements go through `stock_post_movement`, which locks the stock item (`FOR UPDATE`), recomputes balance, and refuses below-zero quantity. `stock_adjust` delegates to the same path.
 
 ## Production, branches, reports, CRM (Phases 11–15)
 
@@ -113,8 +116,14 @@ Sales and purchase receiving post append-only `fashion_stock_movements`.
 | Work orders | `fashion_work_orders`, `fashion_quality_checks`, `/work-orders` |
 | Branches | `fashion_branches`, optional `branch_id` on movements, `/branches` |
 | Reports | `/reports` (aggregates only) |
-| Storefront | tenant `storefront_slug` / `storefront_enabled`, public `/shop/{slug}` |
+| Storefront | tenant `storefront_slug` / `storefront_enabled`, public `/shop/{slug}` (order POST rate-limited) |
 | Broadcasts | `fashion_broadcasts`, `/broadcasts` (opt-in customers only) |
+
+## Frontend assets (Phase 16)
+
+- Runtime CSS: `public/assets/app.css` (legacy) + optional compiled `public/assets/tailwind.css`.
+- Build (dev machine only): `npm install` then `npm run build:css`. Node is not a production app dependency.
+- Details: `docs/FRONTEND.md`.
 
 ## Integration boundaries
 

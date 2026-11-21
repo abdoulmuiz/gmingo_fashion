@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Release-readiness remediation (2026-11-21)
+
+- Public storefront allowlisted in auth tests; unknown `/shop/{slug}` returns 404.
+- Platform admin: no insecure default password; `password_must_change` + `/platform/password` (`030`).
+- Stock floor + `FOR UPDATE` enforced in `stock_post_movement` for sales, adjustments, storefront.
+- Billing: `GET /account/billing/return` peeks only; fulfill via webhook or `POST /account/billing/verify`.
+- Storefront order rate limiting by IP + slug.
+- Phase 16: local self-hosted Tailwind 3 build (`docs/FRONTEND.md`); partial UI migration.
+- Expanded tenant/security coverage in `tests/release_remediation_test.php`.
+
 ### Phases 8–18 — Catalogue through release (2026-11-21)
 
 - Phase 8: products/BOM catalogue, stock kind and unit cost (`023`).
@@ -12,9 +22,9 @@
 - Phase 13: summary reports (`/reports`).
 - Phase 14: optional public storefront (`029`, `/shop/{slug}`, settings).
 - Phase 15: opt-in broadcasts (`028`, `/broadcasts`).
-- Phase 16: CSS polish without Node/Tailwind.
-- Phase 17: `docs/SECURITY.md` production checklist.
-- Phase 18: roadmap/progress/architecture alignment; domain tests for new flows.
+- Phase 16: local Tailwind build + incremental adoption; legacy `app.css` remains primary.
+- Phase 17: `docs/SECURITY.md` production checklist (updated for remediation).
+- Phase 18: roadmap/progress/architecture alignment; domain + remediation tests (release commit pending approval).
 
 ### Phase 7 — Staff management and RBAC (2026-11-21)
 

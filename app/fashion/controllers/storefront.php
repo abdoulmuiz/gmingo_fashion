@@ -55,6 +55,10 @@ function storefront_public_show(string $slug, array $errors = [], array $old = [
 
 function storefront_public_order_submit(string $slug): void
 {
+    if (storefront_order_rate_limited($slug)) {
+        http_response_code(429);
+        throw new HttpException(t('storefront_rate_limited'), 429);
+    }
     $shop = storefront_bind($slug);
     if ($shop === null) {
         throw new HttpException(t('not_found'), 404);
@@ -72,6 +76,7 @@ function storefront_public_order_submit(string $slug): void
             ]);
             return;
         }
+        storefront_order_rate_hit($slug);
         flash_set('success', t('storefront_order_placed'));
         redirect('/shop/' . $slug);
     } finally {

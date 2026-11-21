@@ -127,7 +127,7 @@ function billing_mark_paid(string $checkoutId): void
 
 function billing_fulfill_reference(string $reference, string $source): string
 {
-    if (!in_array($source, ['webhook', 'return'], true)) {
+    if (!in_array($source, ['webhook', 'verify'], true)) {
         return 'ignored';
     }
     $checkout = billing_checkout_by_reference($reference);
@@ -260,10 +260,25 @@ function billing_webhook_receive(string $payload, string $signature): void
     }
 }
 
-function billing_return_status(string $reference): string
+function billing_return_peek(string $reference): string
 {
     if ($reference === '') {
         return 'missing';
     }
-    return billing_fulfill_reference($reference, 'return');
+    $checkout = billing_checkout_by_reference($reference);
+    if ($checkout === null) {
+        return 'missing';
+    }
+    if ($checkout['status'] === 'paid') {
+        return 'paid';
+    }
+    if ($checkout['status'] === 'pending') {
+        return 'waiting';
+    }
+    return 'failed';
+}
+
+function billing_verify_reference(string $reference): string
+{
+    return billing_fulfill_reference($reference, 'verify');
 }

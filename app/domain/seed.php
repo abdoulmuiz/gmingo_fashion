@@ -28,6 +28,11 @@ function seed_refusal_message(): string
 
 function seed_demo(): array
 {
+    if (platform_admin_password_configured() === null || platform_admin_email() === '') {
+        throw new RuntimeException(
+            'Set a strong platform_admin_password (12+ characters) and platform_admin_email in config/config.php before seeding.'
+        );
+    }
     platform_bootstrap();
     $created = seed_company([
         'business_name' => 'Demo Factory',

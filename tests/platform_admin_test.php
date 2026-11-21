@@ -55,9 +55,37 @@ function platform_visit(string $method, string $path, array $post = []): array
     }
 }
 
+check_throws(
+    static function (): void {
+        $cfg = app_config();
+        $cfg['platform_admin_password'] = 'password';
+        $GLOBALS['gmingo_app_config'] = $cfg;
+        platform_bootstrap();
+    },
+    RuntimeException::class,
+    'Platform admin credentials are not securely configured.'
+);
+$secureCfg = app_config();
+$secureCfg['platform_admin_email'] = 'platform@gmingo.test';
+$secureCfg['platform_admin_password'] = 'TestPlatform!Pass99';
+$GLOBALS['gmingo_app_config'] = $secureCfg;
+
+check_throws(
+    static function (): void {
+        $cfg = app_config();
+        $cfg['platform_admin_password'] = '';
+        $GLOBALS['gmingo_app_config'] = $cfg;
+        platform_bootstrap();
+    },
+    RuntimeException::class,
+    'Platform admin credentials are not securely configured.'
+);
+$GLOBALS['gmingo_app_config'] = $secureCfg;
+
 $boot = platform_bootstrap();
 check(isset($boot['user_id']), 'platform bootstrap returns a user');
 check_eq($boot['email'], platform_admin_email(), 'platform bootstrap uses configured email');
+check(($boot['created'] ?? false) === true || isset($boot['user_id']), 'platform bootstrap creates or reuses admin');
 
 $shop = business_register([
     'business_name' => 'Platform Target Shop',
@@ -77,6 +105,18 @@ $loginError = login_user(platform_admin_email(), platform_admin_password());
 check($loginError === null, 'platform admin can sign in');
 check(is_platform_admin() === true, 'signed-in platform user is platform admin');
 check_eq(post_login_path(), '/platform', 'platform admin lands on platform home');
+check(platform_admin_must_change_password() === true, 'new platform admin must change password');
+$forced = platform_visit('GET', '/platform');
+check($forced['kind'] === 'redirect' && $forced['location'] === '/platform/password', 'platform home redirects until password changes');
+$changed = platform_password_change([
+    'current_password' => platform_admin_password(),
+    'new_password' => 'TestPlatform!Pass99x',
+    'confirm_password' => 'TestPlatform!Pass99x',
+]);
+check(isset($changed['ok']), 'platform admin can change password');
+check(platform_admin_must_change_password() === false, 'password change clears must-change flag');
+$secureCfg['platform_admin_password'] = 'TestPlatform!Pass99x';
+$GLOBALS['gmingo_app_config'] = $secureCfg;
 
 $home = platform_visit('GET', '/platform');
 check($home['kind'] === 'page' && $home['status'] === 200, 'platform admin opens platform home');

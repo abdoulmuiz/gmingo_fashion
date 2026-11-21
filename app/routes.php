@@ -43,6 +43,14 @@ route('GET', '/platform', function (): void {
     platform_home();
 });
 
+route('GET', '/platform/password', function (): void {
+    platform_password_show();
+});
+
+route('POST', '/platform/password', function (): void {
+    platform_password_submit();
+});
+
 route('GET', '/platform/plans', function (): void {
     platform_plans_index();
 });
@@ -114,6 +122,10 @@ route('POST', '/account/subscription', function (): void {
 
 route('GET', '/account/billing/return', function (): void {
     account_billing_return_show();
+});
+
+route('POST', '/account/billing/verify', function (): void {
+    account_billing_verify_submit();
 });
 
 route('POST', '/webhooks/saas-paystack', function (): void {

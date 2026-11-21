@@ -1,0 +1,13 @@
+@tailwind components;
+@tailwind utilities;
+
+/* Incremental utilities used alongside public/assets/app.css */
+@layer components {
+  .tw-storefront-banner {
+    @apply rounded-xl border border-sky-200 bg-sky-50 px-4 py-5 text-sky-900;
+  }
+
+  .tw-sale-grid {
+    @apply grid gap-3 md:grid-cols-2;
+  }
+}

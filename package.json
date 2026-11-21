@@ -1,0 +1,12 @@
+{
+  "name": "gmingo-fashion-assets",
+  "private": true,
+  "description": "Dev-only asset build for self-hosted Tailwind CSS. Not a runtime dependency.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/tailwind.input.css -o ./public/assets/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./assets/tailwind.input.css -o ./public/assets/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -36,5 +36,12 @@ require $root . '/app/bootstrap.php';
 require $root . '/app/routes.php';
 require __DIR__ . '/assert.php';
 
+$testConfig = app_config();
+$testConfig['platform_admin_email'] = is_string($testConfig['platform_admin_email'] ?? null) && $testConfig['platform_admin_email'] !== ''
+    ? $testConfig['platform_admin_email']
+    : 'platform@gmingo.test';
+$testConfig['platform_admin_password'] = 'TestPlatform!Pass99';
+$GLOBALS['gmingo_app_config'] = $testConfig;
+
 check(str_ends_with(GMINGO_DB_NAME, '_test'), 'tests bind only to a _test database');
 check(GMINGO_DB_NAME !== $name || str_ends_with($name, '_test'), 'tests do not use the main database name');

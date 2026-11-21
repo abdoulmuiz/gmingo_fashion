@@ -194,8 +194,63 @@ function storefront_place_order(array $input): array
         }
         db_commit();
     } catch (Throwable $e) {
-        db_rollback();
+        if (db()->inTransaction()) {
+            db_rollback();
+        }
+        if ($e instanceof RuntimeException && $e->getMessage() === 'stock_below_zero') {
+            return ['errors' => ['form' => 'stock_below_zero']];
+        }
         throw $e;
     }
     return ['sale_id' => $saleId, 'total_kobo' => $lineTotal];
+}
+
+function storefront_order_rate_max(): int
+{
+    return 8;
+}
+
+function storefront_order_rate_window(): int
+{
+    return 900;
+}
+
+function storefront_order_rate_path(string $slug): string
+{
+    $dir = dirname(__DIR__, 2) . '/storage/ratelimit/storefront';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0770, true);
+    }
+    $key = hash('sha256', client_ip() . '|' . storefront_slugify($slug));
+    return $dir . '/' . $key . '.json';
+}
+
+function storefront_order_rate_limited(string $slug): bool
+{
+    $path = storefront_order_rate_path($slug);
+    if (!is_file($path)) {
+        return false;
+    }
+    $raw = file_get_contents($path);
+    $data = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($data)) {
+        return false;
+    }
+    $cut = time() - storefront_order_rate_window();
+    $recent = array_values(array_filter($data, static fn ($t): bool => is_int($t) && $t >= $cut));
+    return count($recent) >= storefront_order_rate_max();
+}
+
+function storefront_order_rate_hit(string $slug): void
+{
+    $path = storefront_order_rate_path($slug);
+    $raw = is_file($path) ? file_get_contents($path) : '[]';
+    $data = is_string($raw) ? json_decode($raw, true) : [];
+    if (!is_array($data)) {
+        $data = [];
+    }
+    $cut = time() - storefront_order_rate_window();
+    $recent = array_values(array_filter($data, static fn ($t): bool => is_int($t) && $t >= $cut));
+    $recent[] = time();
+    file_put_contents($path, json_encode($recent), LOCK_EX);
 }

@@ -194,6 +194,7 @@ $openWhenSignedOut = [
     '/track/{token}/invoice.pdf',
     '/track/{token}/receipt/{id}.png',
     '/track/{token}/receipt/{id}.pdf',
+    '/shop/{slug}',
 ];
 foreach ($GLOBALS['gmingo_routes'] as [$method, $pattern, $handler]) {
     if ($method !== 'GET' || in_array($pattern, $openWhenSignedOut, true)) {
@@ -224,3 +225,16 @@ ob_start();
 router_dispatch('GET', '/track/not-a-token');
 $publicTrack = (string) ob_get_clean();
 check(http_response_code() === 404 && str_contains($publicTrack, 'Page not found'), 'a signed-out tracking link shows Page not found');
+
+$_SERVER['REQUEST_URI'] = base_path() . '/shop/missing-public-shop';
+http_response_code(200);
+try {
+    ob_start();
+    router_dispatch('GET', '/shop/missing-public-shop');
+    $publicShop = (string) ob_get_clean();
+    check(http_response_code() === 404 && str_contains($publicShop, 'Page not found'), 'signed-out unknown storefront shows Page not found');
+} catch (HttpException $e) {
+    ob_end_clean();
+    check_eq($e->status(), 404, 'signed-out unknown storefront returns 404');
+    check(str_contains($e->getMessage(), t('not_found')) || $e->getMessage() !== '', 'signed-out unknown storefront 404 has a message');
+}

@@ -6,9 +6,9 @@
 /** @var array $old */
 ?>
 <section class="card">
-    <h1><?= e(t('sales')) ?></h1>
-    <p class="meta"><?= e(t('sales_help')) ?></p>
-    <form method="post" action="<?= e(url('/sales')) ?>" class="stack">
+    <h1 class="font-semibold tracking-tight"><?= e(t('sales')) ?></h1>
+    <p class="meta text-slate-600"><?= e(t('sales_help')) ?></p>
+    <form method="post" action="<?= e(url('/sales')) ?>" class="stack tw-sale-grid">
         <?= csrf_field() ?>
         <label><?= e(t('product')) ?>
             <select name="product_id" required>

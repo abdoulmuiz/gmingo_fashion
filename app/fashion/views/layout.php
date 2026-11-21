@@ -29,6 +29,12 @@ $brandHref = $isPlatformAdmin ? '/platform' : '/';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> · <?= e(t('app_name')) ?></title>
     <link rel="stylesheet" href="<?= e(url('/assets/app.css')) ?>?v=<?= e((string) filemtime(dirname(__DIR__, 3) . '/public/assets/app.css')) ?>">
+    <?php
+    $tailwindCss = dirname(__DIR__, 3) . '/public/assets/tailwind.css';
+    if (is_file($tailwindCss)):
+    ?>
+    <link rel="stylesheet" href="<?= e(url('/assets/tailwind.css')) ?>?v=<?= e((string) filemtime($tailwindCss)) ?>">
+    <?php endif; ?>
 </head>
 <body class="<?= $showNav ? 'has-nav' : 'is-guest' ?>">
     <div class="shell">

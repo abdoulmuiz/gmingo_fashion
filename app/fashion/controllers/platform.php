@@ -44,6 +44,29 @@ function platform_home(): void
     ]);
 }
 
+function platform_password_show(array $errors = []): void
+{
+    require_platform_admin();
+    render('platform/password', [
+        'title' => t('platform_password_change'),
+        'errors' => $errors,
+        'must_change' => platform_admin_must_change_password(),
+    ]);
+}
+
+function platform_password_submit(): void
+{
+    require_platform_admin();
+    csrf_check();
+    $result = platform_password_change($_POST);
+    if (isset($result['errors'])) {
+        platform_password_show($result['errors']);
+        return;
+    }
+    flash_set('success', t('platform_password_changed'));
+    redirect('/platform');
+}
+
 function platform_plans_index(): void
 {
     require_platform_admin();

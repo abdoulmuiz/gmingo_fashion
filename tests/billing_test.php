@@ -169,8 +169,23 @@ check($payments !== [] && (string) $payments[0]['status'] === 'succeeded', 'saas
 $paidCheckout = db_select('fashion_subscription_checkouts', ['provider_reference' => $reference], ['limit' => 1]);
 check((string) ($paidCheckout[0]['status'] ?? '') === 'paid', 'checkout marked paid');
 
-$again = billing_fulfill_reference($reference, 'return');
-check_eq($again, 'paid', 'return path is idempotent for a paid checkout');
+$peek = billing_return_peek($reference);
+check_eq($peek, 'paid', 'billing return peek reports paid without mutating');
+$paymentsBefore = count(db_select('fashion_subscription_payments', ['provider_reference' => $reference]));
+$again = billing_verify_reference($reference);
+check_eq($again, 'paid', 'verify path is idempotent for a paid checkout');
+$paymentsAfter = count(db_select('fashion_subscription_payments', ['provider_reference' => $reference]));
+check_eq($paymentsAfter, $paymentsBefore, 'verify does not duplicate subscription payments');
+
+$pendingCheckout = billing_checkout_start((string) $starter['id'], 'monthly');
+$pendingRef = (string) $pendingCheckout['checkout']['provider_reference'];
+$beforePendingPayments = count(db_select('fashion_subscription_payments', []));
+$getPeek = billing_return_peek($pendingRef);
+check_eq($getPeek, 'waiting', 'unpaid checkout peeks as waiting');
+$stillPending = db_select('fashion_subscription_checkouts', ['provider_reference' => $pendingRef], ['limit' => 1]);
+check_eq((string) ($stillPending[0]['status'] ?? ''), 'pending', 'GET peek does not mark checkout paid');
+$afterPeekPayments = count(db_select('fashion_subscription_payments', []));
+check_eq($afterPeekPayments, $beforePendingPayments, 'GET peek does not add subscription payments');
 
 $renewStart = billing_checkout_start((string) $starter['id'], 'monthly');
 check(isset($renewStart['checkout']), 'active shop can start a renewal checkout');

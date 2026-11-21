@@ -4,9 +4,9 @@
 /** @var array $errors */
 /** @var array $old */
 ?>
-<section class="card storefront-hero">
-    <h1><?= e((string) $shop['name']) ?></h1>
-    <p class="meta"><?= e(t('storefront_public_help')) ?></p>
+<section class="card storefront-hero tw-storefront-banner">
+    <h1 class="font-semibold tracking-tight text-sky-900"><?= e((string) $shop['name']) ?></h1>
+    <p class="meta text-slate-600"><?= e(t('storefront_public_help')) ?></p>
 </section>
 <?php if ($products === []): ?>
     <section class="card"><p><?= e(t('products_empty')) ?></p></section>
