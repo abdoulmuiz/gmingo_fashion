@@ -134,6 +134,8 @@ function db_append_only(string $table): bool
         'fashion_messages',
         'fashion_receipts',
         'fashion_receipt_voids',
+        'fashion_subscription_payments',
+        'fashion_subscription_events',
     ], true);
 }
 
@@ -441,6 +443,79 @@ function platform_query_unsafe(string $sql, array $params = []): array
     db_bind($statement, $params);
     $statement->execute();
     return $statement->fetchAll();
+}
+
+function subscription_platform_tenant_id(): string
+{
+    return '00000000-0000-4000-8000-000000000001';
+}
+
+function subscription_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'plan_') || str_starts_with($caller, 'subscription_');
+    if (!$allowed || !str_ends_with($file, '/app/domain/subscriptions.php')) {
+        throw new RuntimeException('This query is only for subscription plans.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (!preg_match('/\bfrom\s+`?fashion_plans`?\b/i', $bare)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/\b(union|into|outfile|dumpfile|sleep|benchmark|information_schema)\b/i', $bare)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
+function subscription_platform_execute(string $sql, array $params = []): int
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'plan_') || str_starts_with($caller, 'subscription_');
+    if (!$allowed || !str_ends_with($file, '/app/domain/subscriptions.php')) {
+        throw new RuntimeException('This write is only for subscription plans.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/^\s*(insert|update)\b/i', $sql) !== 1) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (preg_match('/^\s*insert\b/i', $bare) === 1) {
+        if (!preg_match('/\binto\s+`?fashion_plans`?\b/i', $bare)) {
+            throw new RuntimeException('This write is not allowed.');
+        }
+    } elseif (!preg_match('/^\s*update\s+`?fashion_plans`?\b/i', $bare)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/\b(union|outfile|dumpfile|sleep|benchmark|information_schema|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    foreach ($params as $key => $value) {
+        if (is_float($value)) {
+            throw new RuntimeException('Floats are not allowed. Store money as whole kobo.');
+        }
+        if (preg_match('/tenant_id/i', (string) $key) && (string) $value !== subscription_platform_tenant_id()) {
+            throw new RuntimeException('Plans must use the platform tenant.');
+        }
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->rowCount();
 }
 
 function db_order(string $order): string

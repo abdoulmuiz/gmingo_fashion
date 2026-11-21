@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/defaults.php';
 require_once __DIR__ . '/modules.php';
+require_once __DIR__ . '/subscriptions.php';
 
 function account_clean(string $value): string
 {
@@ -73,6 +74,7 @@ function business_register(array $input): array
         ]);
         module_seed($companyType, $userId, $now);
         shop_seed_defaults($companyType);
+        subscription_start_trial();
         if (defined('GMINGO_TESTING') && !empty($GLOBALS['gmingo_fail_register'])) {
             throw new RuntimeException('Simulated signup failure.');
         }

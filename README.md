@@ -1,8 +1,10 @@
 # Gmingo Fashion
 
-A shop book for one tailoring business. It runs on plain PHP 8.1 and MySQL. Put the folder where the web server can see it as `/gmingo_fashion`.
+Multi-tenant fashion business SaaS for Gmingo Tech Solutions. It runs on plain PHP 8.1 and MySQL. Put the folder where the web server can see it as `/gmingo_fashion`.
 
-The demo shop is **Kano Stitches Tailoring**. Log in as `demo@gmingo.test` with the password `password`. Demo data loads only when `environment` in `config/config.php` is `local`.
+Each registered business gets its own tenant workspace (customers, orders, stock, settings). Subscription plans and lifecycle live in the database domain layer; subscription UI and SaaS checkout come in later phases. See `docs/MASTER_ROADMAP.md` and `docs/ARCHITECTURE.md`.
+
+The local demo shop is **Kano Stitches Tailoring**. Log in as `demo@gmingo.test` with the password `password`. Demo data loads only when `environment` in `config/config.php` is `local`.
 
 Paystack stays off until `payment_placeholder_domain` in `config/config.php` is the site address, such as `https://shop.example.com`. Leave that setting empty until the address is known. Paystack mode cannot be switched on while it is empty. The Paystack API address is `paystack_base_url` and should stay `https://api.paystack.co`.
 
@@ -31,6 +33,12 @@ MAMP’s MySQL listens on port **8889** and the root password is **root**. The A
 The same `setup-mac.command` detects `/Applications/XAMPP`. XAMPP on a Mac uses port **3306** and an empty root password, and the site opens at `http://localhost/gmingo_fashion/`.
 
 On a Mac, `update-mac.command` runs migrations only.
+
+## Migrations only (Linux / any platform with PHP)
+
+```
+php tools/migrate.php
+```
 
 ## Tests
 
