@@ -1,9 +1,11 @@
-<section class="card">
+<section class="auth-panel card">
+    <p class="eyebrow"><?= e(t('app_kicker')) ?></p>
     <h1><?= e(t('register')) ?></h1>
+    <p class="auth-lead"><?= e(t('home_body')) ?></p>
     <?php if (!empty($errors['form'])): ?>
         <p class="error"><?= e(t((string) $errors['form'])) ?></p>
     <?php endif; ?>
-    <form method="post" action="<?= e(url('/register')) ?>">
+    <form class="auth-form stack" method="post" action="<?= e(url('/register')) ?>">
         <?= csrf_field() ?>
         <label><?= e(t('company_type')) ?>
             <select name="company_type" required>
@@ -36,5 +38,5 @@
         <?php if (!empty($errors['phone'])): ?><p class="error"><?= e(t((string) $errors['phone'])) ?></p><?php endif; ?>
         <button class="btn" type="submit"><?= e(t('register')) ?></button>
     </form>
-    <p><a href="<?= e(url('/login')) ?>"><?= e(t('have_account')) ?></a></p>
+    <p class="auth-link"><a href="<?= e(url('/login')) ?>"><?= e(t('have_account')) ?></a></p>
 </section>

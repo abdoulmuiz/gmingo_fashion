@@ -22,6 +22,7 @@ $navItems = $showNav
         : menu_links('nav'))
     : [];
 $brandHref = $isPlatformAdmin ? '/platform' : '/';
+$isAuthGuest = in_array($current, ['/login', '/register'], true);
 ?><!doctype html>
 <html lang="<?= e(current_lang()) ?>">
 <head>
@@ -41,7 +42,7 @@ $brandHref = $isPlatformAdmin ? '/platform' : '/';
         <header class="site-header">
             <div class="utility">
                 <div class="utility-inner">
-                    <span><?= e(t('app_kicker')) ?></span>
+                    <span class="utility-brand"><?= e(t('app_kicker')) ?></span>
                     <span class="utility-note"><?= e($isPlatformAdmin ? t('platform_home_help') : t('home_body')) ?></span>
                 </div>
             </div>
@@ -59,8 +60,8 @@ $brandHref = $isPlatformAdmin ? '/platform' : '/';
                     </a>
                     <?php if (!$showNav): ?>
                         <div class="mast-actions">
-                            <a class="btn btn-quiet btn-small" href="<?= e(url('/login')) ?>"><?= e(t('login')) ?></a>
-                            <a class="btn btn-small" href="<?= e(url('/register')) ?>"><?= e(t('register')) ?></a>
+                            <a class="btn btn-quiet btn-small<?= $current === '/login' ? ' is-current' : '' ?>" href="<?= e(url('/login')) ?>"><?= e(t('login')) ?></a>
+                            <a class="btn btn-small<?= $current === '/register' ? ' is-current' : '' ?>" href="<?= e(url('/register')) ?>"><?= e(t('register')) ?></a>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -75,7 +76,7 @@ $brandHref = $isPlatformAdmin ? '/platform' : '/';
                 </nav>
             <?php endif; ?>
             <div class="column">
-                <main class="app">
+                <main class="app<?= $isAuthGuest ? ' app-guest' : '' ?>">
                     <?php $flashSuccess = flash_get('success'); ?>
                     <?php $flashError = flash_get('error'); ?>
                     <?php if ($flashSuccess !== null): ?>

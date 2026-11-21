@@ -4,7 +4,7 @@
 
 | File | Role |
 | --- | --- |
-| `public/assets/app.css` | Legacy custom CSS (primary layout, forms, navigation). Still required. |
+| `public/assets/app.css` | Primary design system (layout, forms, navigation, auth). Required. |
 | `public/assets/tailwind.css` | Compiled, self-hosted Tailwind utilities/components. Optional at runtime only if the file is present. |
 
 There is **no Tailwind CDN** at runtime. Production needs the compiled `tailwind.css` file committed or copied with the deploy; Node is not required on the server.

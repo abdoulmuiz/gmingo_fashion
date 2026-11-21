@@ -6,7 +6,7 @@
 | --- | --- |
 | Completed phases | 1–17 (Phase 16 Tailwind build done; UI migration partial) |
 | Current phase | 18 — final integration / release readiness |
-| Current milestone | Release-readiness remediation verified; awaiting release-commit approval |
+| Current milestone | Visual redesign shipped in working tree; release commit still awaiting approval |
 | Branch | `feature/phase-2-saas-foundation` |
 
 ## Pending
@@ -20,7 +20,7 @@
 - Full `php tests/run.php` is slow (~10+ minutes), especially menu access combinations.
 - Storefront online sales deduct stock only when the product has a linked `stock_item_id` and inventory is enabled.
 - Product “variants” are size/colour JSON lists on `fashion_products`, not a separate variant inventory table.
-- Most screens still use legacy `app.css`; only selected screens use Tailwind utilities.
+- Primary UI is the redesigned `app.css` system; Tailwind is available on selected screens only.
 - True multi-process concurrent stock races rely on MySQL `FOR UPDATE` in `stock_post_movement`; automated tests cover sequential conflicting deductions.
 
 ## Next actions

@@ -1,4 +1,4 @@
-<section class="hero">
+<section class="hero home-hero">
     <p class="eyebrow"><?= e(t('app_kicker')) ?></p>
     <h1><?= e($greeting) ?></h1>
     <p><?= e(t('home_title')) ?></p>

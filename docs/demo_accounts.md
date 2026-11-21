@@ -5,8 +5,8 @@ These logins are for a local demo only. Shop owner/staff passwords below are `pa
 ## Platform admin
 
 - Console: `/platform`
-- Email: from `platform_admin_email` in `config/config.php` (example seed uses `platform@gmingo.test`)
-- Password: must be a strong value in `platform_admin_password` (12+ characters; never the old default `password`). First login forces a password change.
+- Email: `admin@gmingo.com` (from `platform_admin_email` in `config/config.php`)
+- Password: value of `platform_admin_password` in local config (12+ characters). First login forces a password change.
 - Manages plans and shop subscriptions (suspend / reactivate)
 
 ## Tailor shop

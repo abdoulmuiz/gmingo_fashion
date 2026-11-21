@@ -32,7 +32,7 @@ if ($result['status'] === 'exists') {
     echo "Demo shops ready: Kano Stitches Tailoring, Demo Factory, and Demo Brand.\n";
 }
 echo "Password for every demo login: password\n";
-echo "Platform admin: platform@gmingo.test\n";
+echo 'Platform admin: ' . platform_admin_email() . "\n";
 echo "Tailor owner: demo@gmingo.test\n";
 echo "Tailor staff: tailor-staff@gmingo.test\n";
 echo "Factory owner: factory@gmingo.test\n";

@@ -19,9 +19,10 @@ module.exports = {
     extend: {
       colors: {
         gmingo: {
-          navy: '#1e3a8a',
-          ink: '#0f2557',
-          blue: '#2f80ed',
+          navy: '#1a3a8a',
+          ink: '#0c1f44',
+          blue: '#2b74e8',
+          deep: '#071633',
         },
       },
       fontFamily: {

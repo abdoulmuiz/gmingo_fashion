@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Visual redesign — professional Gmingo chrome (2026-11-21)
+
+- Rebuilt `public/assets/app.css` tokens, atmosphere, header/footer, forms, nav, cards, and motion.
+- Elevated login/register auth panels; refined layout guest chrome and More menu links.
+- Aligned Tailwind `gmingo` palette with the navy/blue system.
+
 ### Release-readiness remediation (2026-11-21)
 
 - Public storefront allowlisted in auth tests; unknown `/shop/{slug}` returns 404.
