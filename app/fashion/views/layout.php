@@ -3,12 +3,25 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/domain/access.php';
+require_once dirname(__DIR__, 2) . '/domain/platform.php';
 
 /** @var string $title */
 /** @var string $view_file */
 $current = request_path();
-$showNav = !in_array($current, ['/login', '/register', '/pay/return'], true);
-$navItems = $showNav ? menu_links('nav') : [];
+$isPlatformAdmin = current_user_id() !== null && is_platform_admin();
+$showNav = !in_array($current, ['/login', '/register', '/onboarding', '/pay/return'], true)
+    && !str_starts_with($current, '/onboarding/')
+    && !str_starts_with($current, '/shop/');
+$navItems = $showNav
+    ? ($isPlatformAdmin
+        ? [
+            ['/platform', 'platform_home'],
+            ['/platform/tenants', 'platform_tenants'],
+            ['/platform/plans', 'platform_plans'],
+        ]
+        : menu_links('nav'))
+    : [];
+$brandHref = $isPlatformAdmin ? '/platform' : '/';
 ?><!doctype html>
 <html lang="<?= e(current_lang()) ?>">
 <head>
@@ -23,14 +36,20 @@ $navItems = $showNav ? menu_links('nav') : [];
             <div class="utility">
                 <div class="utility-inner">
                     <span><?= e(t('app_kicker')) ?></span>
-                    <span class="utility-note"><?= e(t('home_body')) ?></span>
+                    <span class="utility-note"><?= e($isPlatformAdmin ? t('platform_home_help') : t('home_body')) ?></span>
                 </div>
             </div>
             <div class="mast">
                 <div class="mast-inner">
-                    <a class="brand" href="<?= e(url('/')) ?>">
-                        <span class="brand-mark" aria-hidden="true">G</span>
-                        <span><?= e(t('app_name')) ?></span>
+                    <a class="brand" href="<?= e(url($brandHref)) ?>">
+                        <img
+                            class="brand-logo"
+                            src="<?= e(url('/assets/gmingo-logo.jpg')) ?>"
+                            alt="<?= e(t('company_name')) ?>"
+                            width="180"
+                            height="48"
+                        >
+                        <span class="brand-product"><?= e(t('app_product')) ?></span>
                     </a>
                     <?php if (!$showNav): ?>
                         <div class="mast-actions">
@@ -64,6 +83,13 @@ $navItems = $showNav ? menu_links('nav') : [];
                 <footer class="site-footer">
                     <div class="footer-inner">
                         <div class="footer-brand">
+                            <img
+                                class="footer-logo"
+                                src="<?= e(url('/assets/gmingo-logo.jpg')) ?>"
+                                alt="<?= e(t('company_name')) ?>"
+                                width="140"
+                                height="38"
+                            >
                             <strong><?= e(t('app_name')) ?></strong>
                             <p><?= e(t('home_title')) ?></p>
                         </div>

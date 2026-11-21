@@ -23,6 +23,13 @@ return [
     'public_base_url' => '',
     // Paystack API address. Leave this as Paystack's own address.
     'paystack_base_url' => 'https://api.paystack.co',
+    // Local/platform operator login created by platform_bootstrap() / seed.
+    'platform_admin_email' => 'platform@gmingo.test',
+    'platform_admin_password' => 'password',
+    // Gmingo SaaS Paystack keys (subscription billing). Leave empty to keep manual renew.
+    // Do not reuse a shop's Paystack keys here.
+    'saas_paystack_secret_key' => '',
+    'saas_paystack_public_key' => '',
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,

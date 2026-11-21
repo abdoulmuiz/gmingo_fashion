@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 function company_types(): array
 {
-    return ['tailor', 'factory', 'brand'];
+    return ['tailor', 'factory', 'brand', 'boutique', 'ready_to_wear'];
 }
 
 function module_keys(): array
@@ -41,7 +41,7 @@ function module_defaults(string $companyType): array
             'fashion.staff',
         ];
     }
-    if ($companyType === 'brand') {
+    if ($companyType === 'brand' || $companyType === 'boutique' || $companyType === 'ready_to_wear') {
         return [
             'fashion.orders',
             'fashion.finance',
@@ -93,9 +93,15 @@ function module_enabled(string $key): bool
 function require_module(string $key): void
 {
     require_login();
+    require_once __DIR__ . '/subscriptions.php';
+    require_subscription_entitled();
     if (!module_enabled($key)) {
         http_response_code(403);
         throw new HttpException(t('module_disabled'), 403);
+    }
+    if (!subscription_allows_module($key)) {
+        http_response_code(403);
+        throw new HttpException(t('subscription_feature_blocked'), 403);
     }
     if ($key === 'fashion.online_payments' && !module_enabled('fashion.finance')) {
         http_response_code(403);

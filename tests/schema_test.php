@@ -11,7 +11,7 @@ $again = schema_migrate();
 $after = tests_table_count($main);
 
 check(str_ends_with((string) db()->query('SELECT DATABASE()')->fetchColumn(), '_test'), 'migration connects to the test database');
-$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql', '006_payment_reason.sql', '007_field_unit.sql', '008_deposit_stage.sql', '009_fabric_log.sql', '010_order_groups.sql', '011_stock.sql', '012_fittings.sql', '013_messages.sql', '014_tracking.sql', '015_receipts.sql', '016_customer_lang.sql', '017_subscription_plans.sql', '018_tenant_subscriptions.sql'];
+$knownMigrations = ['001_init.sql', '002_company_modules.sql', '003_stage_roles.sql', '004_payment_settings.sql', '005_paystack.sql', '006_payment_reason.sql', '007_field_unit.sql', '008_deposit_stage.sql', '009_fabric_log.sql', '010_order_groups.sql', '011_stock.sql', '012_fittings.sql', '013_messages.sql', '014_tracking.sql', '015_receipts.sql', '016_customer_lang.sql', '017_subscription_plans.sql', '018_tenant_subscriptions.sql', '019_onboarding.sql', '020_platform_admin.sql', '021_subscription_billing.sql', '022_staff_rbac.sql', '023_products_catalogue.sql', '024_sales.sql', '025_purchasing.sql', '026_work_orders.sql', '027_branches.sql', '028_broadcasts.sql', '029_storefront.sql'];
 foreach ($applied as $file) {
     check(in_array($file, $knownMigrations, true), $file . ' is a fashion migration');
 }
@@ -56,11 +56,31 @@ $expected = [
     'fashion_subscriptions',
     'fashion_subscription_payments',
     'fashion_subscription_events',
+    'fashion_subscription_checkouts',
+    'fashion_products',
+    'fashion_product_bom',
+    'fashion_sales',
+    'fashion_sale_lines',
+    'fashion_sale_counters',
+    'fashion_suppliers',
+    'fashion_purchase_orders',
+    'fashion_purchase_order_lines',
+    'fashion_work_orders',
+    'fashion_quality_checks',
+    'fashion_branches',
+    'fashion_broadcasts',
 ];
 $present = db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 foreach ($expected as $table) {
     check(in_array($table, $present, true), $table . ' exists');
 }
+
+$storefrontSlug = db()->prepare(
+    'SELECT DATA_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+);
+$storefrontSlug->execute(['table_name' => 'fashion_tenants', 'column_name' => 'storefront_slug']);
+$storefrontSlugRow = $storefrontSlug->fetch();
+check(is_array($storefrontSlugRow) && $storefrontSlugRow['DATA_TYPE'] === 'varchar' && $storefrontSlugRow['IS_NULLABLE'] === 'YES', 'tenant storefront slug is optional varchar');
 
 $planPrice = db()->prepare(
     'SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'

@@ -10,6 +10,11 @@ function stock_categories(): array
     return ['fabric', 'thread', 'zip', 'button', 'lining', 'interfacing', 'packaging', 'other'];
 }
 
+function stock_kinds(): array
+{
+    return ['raw', 'finished'];
+}
+
 function stock_units(): array
 {
     return ['cones', 'yards', 'pieces', 'metres', 'other'];
@@ -17,7 +22,36 @@ function stock_units(): array
 
 function stock_reasons(): array
 {
-    return ['purchase', 'used', 'adjustment', 'correction', 'opening'];
+    return ['purchase', 'used', 'adjustment', 'correction', 'opening', 'sale', 'transfer'];
+}
+
+function stock_post_movement(string $itemId, int $changeHundredths, string $reason, ?string $note = null, ?string $orderId = null, ?string $branchId = null, ?string $actorUserId = null): string
+{
+    require_module('fashion.inventory');
+    stock_require($itemId);
+    if ($changeHundredths === 0 || !in_array($reason, stock_reasons(), true)) {
+        throw new RuntimeException('Invalid stock movement.');
+    }
+    $userId = $actorUserId;
+    if ($userId === null || !is_uuid($userId)) {
+        $userId = current_user_id();
+    }
+    if ($userId === null || !is_uuid($userId)) {
+        throw new RuntimeException('Missing session.');
+    }
+    $data = [
+        'item_id' => $itemId,
+        'change_hundredths' => $changeHundredths,
+        'reason' => $reason,
+        'order_id' => $orderId,
+        'user_id' => $userId,
+        'note' => $note,
+        'created_at' => app_now()->format('Y-m-d H:i:s'),
+    ];
+    if ($branchId !== null) {
+        $data['branch_id'] = $branchId;
+    }
+    return db_insert('fashion_stock_movements', $data);
 }
 
 function stock_hundredths(string $raw, bool $allowNegative = false): ?int
@@ -95,11 +129,18 @@ function stock_present(array $row): array
     $minimum = $row['minimum_hundredths'];
     $colour = $row['colour'] ?? null;
     $lastUser = $row['last_user_name'] ?? null;
+    $kind = (string) ($row['kind'] ?? 'raw');
+    if (!in_array($kind, stock_kinds(), true)) {
+        $kind = 'raw';
+    }
+    $unitCost = $row['unit_cost_kobo'] ?? null;
     return [
         'id' => (string) $row['id'],
         'name' => (string) $row['name'],
         'category' => (string) $row['category'],
         'unit' => (string) $row['unit'],
+        'kind' => $kind,
+        'unit_cost_kobo' => $unitCost === null || $unitCost === '' ? null : (int) $unitCost,
         'colour' => is_string($colour) && $colour !== '' ? $colour : null,
         'minimum_hundredths' => $minimum === null || $minimum === '' ? null : (int) $minimum,
         'quantity_hundredths' => (int) ($row['quantity_hundredths'] ?? 0),
@@ -109,7 +150,7 @@ function stock_present(array $row): array
 
 function stock_item_sql(): string
 {
-    return 'SELECT i.id, i.name, i.category, i.unit, i.colour, i.minimum_hundredths,
+    return 'SELECT i.id, i.name, i.category, i.unit, i.colour, i.minimum_hundredths, i.kind, i.unit_cost_kobo,
             COALESCE((SELECT SUM(m.change_hundredths) FROM fashion_stock_movements m WHERE m.tenant_id = :tenant_id AND m.item_id = i.id), 0) AS quantity_hundredths,
             (SELECT u.name FROM fashion_stock_movements lm
                 LEFT JOIN fashion_users u ON u.id = lm.user_id AND u.tenant_id = :tenant_id
@@ -204,12 +245,17 @@ function stock_create(array $input): array
     $name = trim((string) ($input['name'] ?? ''));
     $category = (string) ($input['category'] ?? '');
     $unit = (string) ($input['unit'] ?? '');
+    $kind = (string) ($input['kind'] ?? 'raw');
     $colour = trim((string) ($input['colour'] ?? ''));
     $minimumRaw = trim((string) ($input['minimum'] ?? ''));
+    $costRaw = trim((string) ($input['unit_cost_kobo'] ?? ''));
     if ($name === '' || strlen($name) > 190) {
         return ['error' => 'required'];
     }
     if (!in_array($category, stock_categories(), true) || !in_array($unit, stock_units(), true)) {
+        return ['error' => 'required'];
+    }
+    if (!in_array($kind, stock_kinds(), true)) {
         return ['error' => 'required'];
     }
     if (strlen($colour) > 80) {
@@ -222,10 +268,19 @@ function stock_create(array $input): array
             return ['error' => 'invalid_stock_amount'];
         }
     }
+    $unitCost = null;
+    if ($costRaw !== '') {
+        if (!preg_match('/^\d+$/', $costRaw)) {
+            return ['error' => 'invalid_price'];
+        }
+        $unitCost = (int) $costRaw;
+    }
     $id = db_insert('fashion_stock_items', [
         'name' => $name,
         'category' => $category,
         'unit' => $unit,
+        'kind' => $kind,
+        'unit_cost_kobo' => $unitCost,
         'colour' => $colour === '' ? null : $colour,
         'minimum_hundredths' => $minimum,
         'created_at' => app_now()->format('Y-m-d H:i:s'),

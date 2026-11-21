@@ -422,6 +422,34 @@ function tracking_platform_query(string $sql, array $params = []): array
     return [];
 }
 
+function storefront_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowedCallers = ['storefront_bind', 'storefront_settings_save'];
+    if (!in_array($caller, $allowedCallers, true) || !str_ends_with($file, '/app/domain/storefront.php')) {
+        throw new RuntimeException('This query is only for storefront.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $allowed = [
+        'SELECT id FROM fashion_tenants WHERE storefront_slug = :slug AND id <> :id LIMIT 1',
+        'SELECT id, name, storefront_enabled, brand_primary, brand_accent FROM fashion_tenants WHERE storefront_slug = :slug LIMIT 1',
+    ];
+    if (!in_array($sql, $allowed, true)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
 function platform_query_unsafe(string $sql, array $params = []): array
 {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
@@ -432,7 +460,7 @@ function platform_query_unsafe(string $sql, array $params = []): array
     $fromSignupOrLogin = str_ends_with($callFile, '/app/domain/accounts.php')
         && $lookupFunction === 'auth_find_user_by_email'
         && str_ends_with($lookupFile, '/app/domain/accounts.php')
-        && in_array($ownerFunction, ['business_register', 'login_user'], true);
+        && in_array($ownerFunction, ['business_register', 'login_user', 'auth_email_taken'], true);
     if (!$fromSignupOrLogin) {
         throw new RuntimeException('This query is only for sign-up and login.');
     }
@@ -448,6 +476,127 @@ function platform_query_unsafe(string $sql, array $params = []): array
 function subscription_platform_tenant_id(): string
 {
     return '00000000-0000-4000-8000-000000000001';
+}
+
+function platform_admin_user_id(): string
+{
+    return '00000000-0000-4000-8000-000000000002';
+}
+
+function billing_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'billing_');
+    if (!$allowed || !str_ends_with($file, '/app/domain/billing.php')) {
+        throw new RuntimeException('This query is only for subscription billing.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (preg_match('/\b(union|into|outfile|dumpfile|sleep|benchmark|information_schema|insert|update|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match_all('/\b(?:from|join)\s+`?([a-z0-9_]+)/i', $bare, $matches)) {
+        foreach ($matches[1] as $table) {
+            if (!in_array(strtolower($table), ['fashion_subscription_checkouts', 'fashion_users'], true)) {
+                throw new RuntimeException('This query is not allowed.');
+            }
+        }
+    } else {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
+function admin_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'platform_');
+    if (!$allowed || !str_ends_with($file, '/app/domain/platform.php')) {
+        throw new RuntimeException('This query is only for platform administration.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (preg_match('/\b(union|into|outfile|dumpfile|sleep|benchmark|information_schema|insert|update|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match_all('/\b(?:from|join)\s+`?([a-z0-9_]+)/i', $bare, $matches)) {
+        $allowedTables = [
+            'fashion_tenants',
+            'fashion_users',
+            'fashion_subscriptions',
+            'fashion_subscription_events',
+            'fashion_subscription_payments',
+            'fashion_plans',
+        ];
+        foreach ($matches[1] as $table) {
+            if (!in_array(strtolower($table), $allowedTables, true)) {
+                throw new RuntimeException('This query is not allowed.');
+            }
+        }
+    } else {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
+function admin_platform_execute(string $sql, array $params = []): int
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'platform_');
+    if (!$allowed || !str_ends_with($file, '/app/domain/platform.php')) {
+        throw new RuntimeException('This write is only for platform administration.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/^\s*(insert|update)\b/i', $sql) !== 1) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (preg_match('/\b(union|outfile|dumpfile|sleep|benchmark|information_schema|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/^\s*insert\b/i', $bare) === 1) {
+        if (!preg_match('/\binto\s+`?fashion_users`?\b/i', $bare)) {
+            throw new RuntimeException('This write is not allowed.');
+        }
+    } elseif (!preg_match('/^\s*update\s+`?fashion_users`?\b/i', $bare)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    foreach ($params as $key => $value) {
+        if (is_float($value)) {
+            throw new RuntimeException('Floats are not allowed. Store money as whole kobo.');
+        }
+        if (preg_match('/tenant_id/i', (string) $key) && (string) $value !== subscription_platform_tenant_id()) {
+            throw new RuntimeException('Platform admin users must use the platform tenant.');
+        }
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->rowCount();
 }
 
 function subscription_platform_query(string $sql, array $params = []): array

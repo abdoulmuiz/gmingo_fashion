@@ -4,24 +4,23 @@
 
 | Field | Value |
 | --- | --- |
-| Completed phases | 1 (audit), 2 (subscription engine) |
-| Current phase | None — awaiting approval for Phase 3 |
-| Current milestone | — |
+| Completed phases | 1–18 |
+| Current phase | None — roadmap complete |
+| Current milestone | Release-ready integration |
 | Branch | `feature/phase-2-saas-foundation` |
 
 ## Pending
 
-- Phase 3: registration / onboarding / business setup (needs explicit approval).
+- Optional follow-ups: staff attendance/pay history, richer analytics, live WhatsApp send for broadcasts.
 
 ## Known issues
 
-- Subscription entitlement helpers exist but are not yet enforced on app routes (Phase 4).
-- Company types remain `tailor` / `factory` / `brand` until Phase 3 adds boutique and ready-to-wear.
-- Roadmap docs were added at Phase 2 close; README still describes a single-shop demo flow for local setup.
-- Full `php tests/run.php` is slow (~10+ minutes) largely due to existing combinatorial access tests plus registration work.
+- Onboarding logo uploads require a real multipart file; branding colours work without a logo.
+- Full `php tests/run.php` remains slow (~10+ minutes), especially menu access combinations.
+- Storefront online sales deduct stock only when the product has a linked `stock_item_id` and inventory is enabled.
 
 ## Next actions
 
-1. Obtain approval to start Phase 3.
-2. Expand business types and onboarding without breaking trial subscription creation.
-3. Keep `subscription_ends_on` behaviour intact for tracking and messaging.
+1. Run full `php tests/run.php` on a quiet machine before merge.
+2. Commit when asked; push/PR when asked.
+3. Configure production `config/config.php` and SaaS Paystack keys per `docs/SECURITY.md`.

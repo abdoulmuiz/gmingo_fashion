@@ -92,12 +92,29 @@ a { color: var(--navy); }
 .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     color: var(--navy);
     font-weight: 800;
     font-size: 1.15rem;
     letter-spacing: -0.02em;
     text-decoration: none;
+}
+
+.brand-logo {
+    display: block;
+    height: 42px;
+    width: auto;
+    max-width: min(220px, 55vw);
+    object-fit: contain;
+}
+
+.brand-product {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--muted);
+    border-left: 1px solid var(--line);
+    padding-left: 12px;
+    line-height: 1.2;
 }
 
 .brand-mark {
@@ -590,6 +607,18 @@ summary.btn::marker { content: ""; }
     padding: 28px 16px 36px;
 }
 
+.footer-logo {
+    display: block;
+    height: 36px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+    margin-bottom: 10px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
 .footer-brand strong {
     display: block;
     color: #fff;
@@ -720,3 +749,73 @@ body.paper-thermal .paper { max-width: 72mm; }
     body, .shell, .frame, .column, .app { background: #fff; margin: 0; padding: 0; max-width: none; }
     .paper { box-shadow: none; }
 }
+
+.onboarding-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+.onboarding-steps .is-current {
+    color: var(--navy);
+    font-weight: 700;
+}
+.onboarding-logo {
+    max-width: 160px;
+    max-height: 80px;
+    object-fit: contain;
+}
+.onboarding-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+@media (max-width: 520px) {
+    .brand-product { display: none; }
+    .brand-logo { height: 36px; }
+}
+
+.stack {
+    display: grid;
+    gap: 12px;
+}
+
+.report-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.storefront-hero {
+    background:
+        radial-gradient(circle at top right, rgba(47, 128, 237, 0.18), transparent 42%),
+        linear-gradient(160deg, #ffffff 0%, #eef4ff 100%);
+    border: 1px solid var(--line);
+}
+
+.storefront-hero h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    letter-spacing: -0.02em;
+}
+
+.flash-error {
+    background: #fde8ec;
+    color: var(--danger);
+}
+
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.app > .card {
+    animation: rise-in 280ms ease-out both;
+}
+
+.app > .card:nth-child(2) { animation-delay: 40ms; }
+.app > .card:nth-child(3) { animation-delay: 80ms; }

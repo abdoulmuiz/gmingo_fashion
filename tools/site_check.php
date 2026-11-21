@@ -694,7 +694,7 @@ function site_check_module_paths(): array
         'fashion.measurements' => ['/settings/garments'],
         'fashion.communication' => ['/messages'],
         'fashion.inventory' => ['/stock', '/stock/new'],
-        'fashion.sales' => [],
+        'fashion.sales' => ['/sales', '/products', '/settings/storefront'],
         'fashion.staff' => [],
         'fashion.online_payments' => [],
     ];

@@ -130,6 +130,11 @@ $samples = [
     '/customers/{id}' => '/customers/' . $customer['id'],
     '/settings/garments/{id}' => '/settings/garments/' . $garment['id'],
     '/messages/{id}' => '/messages/' . $messages[0]['id'],
+    '/platform/plans/{id}' => '/platform/plans/' . (string) plan_by_code('starter')['id'],
+    '/platform/tenants/{id}' => '/platform/tenants/' . $tenantId,
+    '/staff/{id}' => '/staff/' . $ownerId,
+    '/products/{id}' => '/products/' . uuid(),
+    '/shop/{slug}' => '/shop/missing-shop-' . $stamp,
 ];
 
 auth_login($ownerId, $tenantId);

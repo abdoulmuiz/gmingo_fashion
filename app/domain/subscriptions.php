@@ -124,6 +124,124 @@ function plan_list_active(): array
     return $out;
 }
 
+function plan_list_all(): array
+{
+    $rows = subscription_platform_query(
+        'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
+                trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
+         FROM fashion_plans
+         ORDER BY active DESC, price_monthly_kobo ASC, name ASC'
+    );
+    $out = [];
+    foreach ($rows as $row) {
+        if (is_array($row)) {
+            $out[] = plan_present($row);
+        }
+    }
+    return $out;
+}
+
+function plan_update(string $planId, array $input): array
+{
+    $plan = plan_get($planId);
+    if ($plan === null) {
+        return ['errors' => ['form' => 'plan_not_found']];
+    }
+    $name = trim((string) ($input['name'] ?? $plan['name']));
+    $description = trim((string) ($input['description'] ?? $plan['description']));
+    $monthly = $input['price_monthly_kobo'] ?? $plan['price_monthly_kobo'];
+    $annual = $input['price_annual_kobo'] ?? $plan['price_annual_kobo'];
+    $trialAvailable = array_key_exists('trial_available', $input)
+        ? !empty($input['trial_available'])
+        : $plan['trial_available'];
+    $trialDays = array_key_exists('trial_days', $input)
+        ? (int) $input['trial_days']
+        : $plan['trial_days'];
+    $active = array_key_exists('active', $input) ? !empty($input['active']) : $plan['active'];
+    $limits = is_array($input['limits'] ?? null) ? $input['limits'] : $plan['limits'];
+    $modules = is_array($input['modules'] ?? null) ? $input['modules'] : $plan['modules'];
+    $errors = [];
+    if ($name === '' || strlen($name) > 120) {
+        $errors['name'] = 'invalid_plan_name';
+    }
+    if (strlen($description) > 500) {
+        $errors['description'] = 'invalid_plan_description';
+    }
+    if (!is_int($monthly) || $monthly < 0) {
+        $errors['price_monthly_kobo'] = 'invalid_price';
+    }
+    if (!is_int($annual) || $annual < 0) {
+        $errors['price_annual_kobo'] = 'invalid_price';
+    }
+    if ($trialAvailable && $trialDays < 1) {
+        $errors['trial_days'] = 'invalid_trial_days';
+    }
+    if (!$trialAvailable) {
+        $trialDays = 0;
+    }
+    $cleanLimits = [];
+    foreach (subscription_limit_keys() as $key) {
+        if (!array_key_exists($key, $limits)) {
+            continue;
+        }
+        $value = $limits[$key];
+        if ($value === null) {
+            $cleanLimits[$key] = null;
+            continue;
+        }
+        if (!is_int($value) || $value < 0) {
+            $errors['limits'] = 'invalid_limits';
+            break;
+        }
+        $cleanLimits[$key] = $value;
+    }
+    $cleanModules = [];
+    foreach ($modules as $module) {
+        if (!is_string($module) || !in_array($module, module_keys(), true)) {
+            $errors['modules'] = 'invalid_modules';
+            break;
+        }
+        $cleanModules[] = $module;
+    }
+    if ($errors !== []) {
+        return ['errors' => $errors];
+    }
+    $now = app_now()->format('Y-m-d H:i:s');
+    subscription_platform_execute(
+        'UPDATE fashion_plans
+         SET name = :name,
+             description = :description,
+             price_monthly_kobo = :price_monthly_kobo,
+             price_annual_kobo = :price_annual_kobo,
+             trial_available = :trial_available,
+             trial_days = :trial_days,
+             active = :active,
+             limits_json = :limits_json,
+             modules_json = :modules_json,
+             updated_at = :updated_at
+         WHERE id = :id AND tenant_id = :tenant_id',
+        [
+            'id' => $planId,
+            'tenant_id' => subscription_platform_tenant_id(),
+            'name' => $name,
+            'description' => $description,
+            'price_monthly_kobo' => $monthly,
+            'price_annual_kobo' => $annual,
+            'trial_available' => $trialAvailable ? 1 : 0,
+            'trial_days' => $trialDays,
+            'active' => $active ? 1 : 0,
+            'limits_json' => json_encode($cleanLimits, JSON_THROW_ON_ERROR),
+            'modules_json' => json_encode(array_values(array_unique($cleanModules)), JSON_THROW_ON_ERROR),
+            'updated_at' => $now,
+        ]
+    );
+    $updated = plan_get($planId);
+    if ($updated === null) {
+        throw new RuntimeException('Plan was not updated.');
+    }
+    return ['plan' => $updated];
+}
+
 function plan_create(array $input): array
 {
     $code = strtolower(trim((string) ($input['code'] ?? '')));
@@ -246,7 +364,9 @@ function subscription_present(array $row): array
 
 function subscription_current(): ?array
 {
-    require_login();
+    if (current_tenant_id() === null) {
+        require_login();
+    }
     $rows = db_select('fashion_subscriptions', [], ['limit' => 1]);
     $row = $rows[0] ?? null;
     return is_array($row) ? subscription_present($row) : null;
@@ -415,7 +535,9 @@ function subscription_start_trial(?string $planCode = null): array
 
 function subscription_activate(string $planId, string $interval, ?int $amountKobo = null, string $provider = 'manual', ?string $reference = null): array
 {
-    require_login();
+    if (current_tenant_id() === null) {
+        require_login();
+    }
     if (!in_array($interval, subscription_intervals(), true)) {
         throw new RuntimeException('Invalid billing interval.');
     }
@@ -481,9 +603,15 @@ function subscription_activate(string $planId, string $interval, ?int $amountKob
     return $sub;
 }
 
-function subscription_renew(?int $amountKobo = null, string $provider = 'manual', ?string $reference = null): array
-{
-    require_login();
+function subscription_renew(
+    ?int $amountKobo = null,
+    string $provider = 'manual',
+    ?string $reference = null,
+    ?string $intervalOverride = null
+): array {
+    if (current_tenant_id() === null) {
+        require_login();
+    }
     $current = subscription_require();
     if (!in_array($current['status'], ['active', 'expired', 'cancelled'], true)) {
         throw new RuntimeException('Only active, expired, or cancelled subscriptions can renew.');
@@ -492,7 +620,10 @@ function subscription_renew(?int $amountKobo = null, string $provider = 'manual'
     if ($plan === null || !$plan['active']) {
         throw new RuntimeException('Plan is not available.');
     }
-    $interval = $current['billing_interval'];
+    $interval = $intervalOverride ?? $current['billing_interval'];
+    if (!in_array($interval, subscription_intervals(), true)) {
+        throw new RuntimeException('Invalid billing interval.');
+    }
     $price = $interval === 'annual' ? $plan['price_annual_kobo'] : $plan['price_monthly_kobo'];
     if ($amountKobo === null) {
         $amountKobo = $price;
@@ -512,6 +643,7 @@ function subscription_renew(?int $amountKobo = null, string $provider = 'manual'
     $fromStatus = $current['status'];
     $sub = subscription_write([
         'status' => 'active',
+        'billing_interval' => $interval,
         'current_period_start' => $start,
         'current_period_end' => $periodEnd,
         'expires_on' => $periodEnd,
@@ -521,6 +653,26 @@ function subscription_renew(?int $amountKobo = null, string $provider = 'manual'
     subscription_record_event($sub, 'renewed', $fromStatus, 'active', null, null, null, null, null);
     subscription_record_payment($sub, $amountKobo, $provider, $reference, 'succeeded');
     return $sub;
+}
+
+/**
+ * Apply a verified SaaS checkout (tenant must already be bound; login optional).
+ */
+function subscription_fulfill_checkout(string $planId, string $interval, int $amountKobo, string $reference): array
+{
+    if (current_tenant_id() === null) {
+        throw new RuntimeException('Missing session.');
+    }
+    $current = subscription_current();
+    $useActivate = $current === null
+        || !subscription_is_entitled($current)
+        || in_array((string) $current['status'], ['suspended', 'expired', 'cancelled'], true)
+        || (string) $current['plan_id'] !== $planId
+        || (string) $current['billing_interval'] !== $interval;
+    if ($useActivate) {
+        return subscription_activate($planId, $interval, $amountKobo, 'paystack', $reference);
+    }
+    return subscription_renew($amountKobo, 'paystack', $reference, $interval);
 }
 
 function subscription_change_plan(string $planId): array
@@ -751,4 +903,85 @@ function subscription_allows(string $feature, ?array $sub = null): bool
         return subscription_is_entitled($sub);
     }
     return false;
+}
+
+function subscription_account_paths(): array
+{
+    return [
+        '/account',
+        '/account/subscription',
+        '/account/billing/return',
+        '/onboarding',
+        '/onboarding/logo',
+        '/platform',
+    ];
+}
+
+function subscription_path_open(?string $path = null): bool
+{
+    $path = $path ?? request_path();
+    if (in_array($path, subscription_account_paths(), true)) {
+        return true;
+    }
+    if (str_starts_with($path, '/onboarding/')) {
+        return true;
+    }
+    if (str_starts_with($path, '/account/billing/')) {
+        return true;
+    }
+    return str_starts_with($path, '/platform/');
+}
+
+function subscription_refresh_status(?array $sub = null): ?array
+{
+    if ($sub === null) {
+        $sub = subscription_current();
+    }
+    if ($sub === null) {
+        return null;
+    }
+    if (!in_array((string) $sub['status'], ['trial', 'active', 'cancelled'], true)) {
+        return $sub;
+    }
+    $ends = subscription_access_end_date($sub);
+    if ($ends === null || $ends === '' || app_today() <= $ends) {
+        return $sub;
+    }
+    return subscription_expire();
+}
+
+function subscription_has_app_access(?array $sub = null): bool
+{
+    $sub = subscription_refresh_status($sub);
+    return subscription_is_entitled($sub);
+}
+
+function require_subscription_entitled(): void
+{
+    require_login();
+    if (subscription_path_open()) {
+        return;
+    }
+    if (subscription_has_app_access()) {
+        return;
+    }
+    redirect('/account/subscription');
+}
+
+function subscription_staff_count(): int
+{
+    require_login();
+    $rows = db_query(
+        'SELECT COUNT(*) AS total FROM fashion_users WHERE tenant_id = :tenant_id AND active = 1'
+    );
+    return (int) ($rows[0]['total'] ?? 0);
+}
+
+function subscription_assert_within_limit(string $limitKey, int $usage): void
+{
+    if (subscription_within_limit($limitKey, $usage)) {
+        return;
+    }
+    http_response_code(403);
+    throw new HttpException(t('subscription_limit_reached'), 403);
 }

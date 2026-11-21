@@ -8,6 +8,7 @@ require_once __DIR__ . '/orders.php';
 require_once __DIR__ . '/payments.php';
 require_once __DIR__ . '/measurements.php';
 require_once __DIR__ . '/stages.php';
+require_once __DIR__ . '/platform.php';
 
 function seed_is_local(array $config): bool
 {
@@ -27,6 +28,7 @@ function seed_refusal_message(): string
 
 function seed_demo(): array
 {
+    platform_bootstrap();
     $created = seed_company([
         'business_name' => 'Demo Factory',
         'owner_name' => 'Demo Factory Owner',

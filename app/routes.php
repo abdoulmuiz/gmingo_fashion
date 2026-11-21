@@ -19,11 +19,56 @@ require_once __DIR__ . '/fashion/controllers/stock.php';
 require_once __DIR__ . '/fashion/controllers/fittings.php';
 require_once __DIR__ . '/fashion/controllers/messages.php';
 require_once __DIR__ . '/fashion/controllers/tracking.php';
+require_once __DIR__ . '/fashion/controllers/onboarding.php';
+require_once __DIR__ . '/fashion/controllers/account.php';
+require_once __DIR__ . '/fashion/controllers/platform.php';
+require_once __DIR__ . '/fashion/controllers/staff.php';
+require_once __DIR__ . '/fashion/controllers/products.php';
+require_once __DIR__ . '/fashion/controllers/sales.php';
+require_once __DIR__ . '/fashion/controllers/purchasing.php';
+require_once __DIR__ . '/fashion/controllers/expenses.php';
+require_once __DIR__ . '/fashion/controllers/work_orders.php';
+require_once __DIR__ . '/fashion/controllers/branches.php';
+require_once __DIR__ . '/fashion/controllers/reports.php';
+require_once __DIR__ . '/fashion/controllers/broadcasts.php';
+require_once __DIR__ . '/fashion/controllers/storefront.php';
 
 route('GET', '/', function (): void {
     require_access('/');
     http_response_code(200);
     home_show();
+});
+
+route('GET', '/platform', function (): void {
+    platform_home();
+});
+
+route('GET', '/platform/plans', function (): void {
+    platform_plans_index();
+});
+
+route('POST', '/platform/plans', function (): void {
+    platform_plans_create();
+});
+
+route('GET', '/platform/plans/{id}', function (array $params): void {
+    platform_plan_edit_show((string) $params['id']);
+});
+
+route('POST', '/platform/plans/{id}', function (array $params): void {
+    platform_plan_edit_submit((string) $params['id']);
+});
+
+route('GET', '/platform/tenants', function (): void {
+    platform_tenants_index();
+});
+
+route('GET', '/platform/tenants/{id}', function (array $params): void {
+    platform_tenant_show((string) $params['id']);
+});
+
+route('POST', '/platform/tenants/{id}', function (array $params): void {
+    platform_tenant_action((string) $params['id']);
 });
 
 route('GET', '/login', function (): void {
@@ -40,6 +85,171 @@ route('GET', '/register', function (): void {
 
 route('POST', '/register', function (): void {
     register_submit();
+});
+
+route('GET', '/onboarding', function (): void {
+    onboarding_show();
+});
+
+route('POST', '/onboarding', function (): void {
+    onboarding_submit();
+});
+
+route('GET', '/onboarding/logo', function (): void {
+    onboarding_logo_show();
+});
+
+route('GET', '/account', function (): void {
+    require_login();
+    redirect('/account/subscription');
+});
+
+route('GET', '/account/subscription', function (): void {
+    account_subscription_show();
+});
+
+route('POST', '/account/subscription', function (): void {
+    account_subscription_submit();
+});
+
+route('GET', '/account/billing/return', function (): void {
+    account_billing_return_show();
+});
+
+route('POST', '/webhooks/saas-paystack', function (): void {
+    account_billing_webhook_submit();
+});
+
+route('GET', '/staff', function (): void {
+    staff_index();
+});
+
+route('GET', '/staff/new', function (): void {
+    staff_create_show();
+});
+
+route('POST', '/staff/new', function (): void {
+    staff_create_submit();
+});
+
+route('GET', '/staff/{id}', function (array $params): void {
+    staff_edit_show((string) $params['id']);
+});
+
+route('POST', '/staff/{id}', function (array $params): void {
+    staff_edit_submit((string) $params['id']);
+});
+
+route('GET', '/products', function (): void {
+    products_index();
+});
+
+route('GET', '/products/new', function (): void {
+    products_create_show();
+});
+
+route('POST', '/products/new', function (): void {
+    products_create_submit();
+});
+
+route('GET', '/products/{id}', function (array $params): void {
+    products_edit_show((string) $params['id']);
+});
+
+route('POST', '/products/{id}', function (array $params): void {
+    products_edit_submit((string) $params['id']);
+});
+
+route('GET', '/sales', function (): void {
+    sales_index();
+});
+
+route('POST', '/sales', function (): void {
+    sales_create_submit();
+});
+
+route('POST', '/sales/{id}/return', function (array $params): void {
+    sales_return_submit((string) $params['id']);
+});
+
+route('GET', '/purchasing', function (): void {
+    purchasing_index();
+});
+
+route('POST', '/purchasing/suppliers', function (): void {
+    purchasing_supplier_submit();
+});
+
+route('POST', '/purchasing/orders', function (): void {
+    purchasing_order_submit();
+});
+
+route('POST', '/purchasing/orders/{id}/receive', function (array $params): void {
+    purchasing_receive_submit((string) $params['id']);
+});
+
+route('GET', '/expenses', function (): void {
+    expenses_index();
+});
+
+route('POST', '/expenses', function (): void {
+    expenses_create_submit();
+});
+
+route('GET', '/work-orders', function (): void {
+    work_orders_index();
+});
+
+route('POST', '/work-orders', function (): void {
+    work_orders_create_submit();
+});
+
+route('POST', '/work-orders/quality', function (): void {
+    work_orders_quality_submit();
+});
+
+route('POST', '/work-orders/{id}/status', function (array $params): void {
+    work_orders_status_submit((string) $params['id']);
+});
+
+route('GET', '/branches', function (): void {
+    branches_index();
+});
+
+route('POST', '/branches', function (): void {
+    branches_create_submit();
+});
+
+route('POST', '/branches/{id}/deactivate', function (array $params): void {
+    branches_deactivate_submit((string) $params['id']);
+});
+
+route('GET', '/reports', function (): void {
+    reports_index();
+});
+
+route('GET', '/broadcasts', function (): void {
+    broadcasts_index();
+});
+
+route('POST', '/broadcasts', function (): void {
+    broadcasts_create_submit();
+});
+
+route('GET', '/settings/storefront', function (): void {
+    storefront_settings_show();
+});
+
+route('POST', '/settings/storefront', function (): void {
+    storefront_settings_submit();
+});
+
+route('GET', '/shop/{slug}', function (array $params): void {
+    storefront_public_show((string) $params['slug']);
+});
+
+route('POST', '/shop/{slug}', function (array $params): void {
+    storefront_public_order_submit((string) $params['slug']);
 });
 
 route('POST', '/logout', function (): void {

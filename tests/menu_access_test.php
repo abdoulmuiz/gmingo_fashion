@@ -106,8 +106,13 @@ for ($mask = 0; $mask < (1 << count($modules)); $mask++) {
                     $detail = $result['body'] !== '' ? ' ' . $result['body'] : '';
                     $problems[] = $role . ' ' . implode(',', $enabled) . ' visible ' . $path . ' returned ' . (string) $result['status'] . $detail;
                 }
-            } elseif ($result['status'] !== 403) {
-                $problems[] = $role . ' ' . implode(',', $enabled) . ' hidden ' . $path . ' returned ' . (string) $result['status'];
+            } else {
+                $denial = access_denial($path);
+                $okBlocked = $result['status'] === 403
+                    || ($denial === 'subscription' && $result['kind'] === 'redirect');
+                if (!$okBlocked) {
+                    $problems[] = $role . ' ' . implode(',', $enabled) . ' hidden ' . $path . ' returned ' . (string) $result['status'];
+                }
             }
             if (count($problems) >= 8) {
                 break 3;

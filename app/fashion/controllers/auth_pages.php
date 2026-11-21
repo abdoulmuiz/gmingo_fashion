@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/domain/accounts.php';
+require_once dirname(__DIR__, 2) . '/domain/onboarding.php';
+require_once __DIR__ . '/onboarding.php';
 
 function safe_back(string $path): string
 {
@@ -91,7 +93,7 @@ function safe_back(string $path): string
 function login_form(array $errors = []): void
 {
     if (current_user_id() !== null) {
-        redirect('/');
+        redirect(post_login_path());
     }
     render('login', [
         'title' => t('login'),
@@ -104,12 +106,12 @@ function login_submit(): void
 {
     csrf_check();
     if (current_user_id() !== null) {
-        redirect('/');
+        redirect(post_login_path());
     }
     $email = (string) ($_POST['email'] ?? '');
     $error = login_user($email, (string) ($_POST['password'] ?? ''));
     if ($error === null) {
-        redirect('/');
+        redirect(post_login_path());
     }
     render('login', [
         'title' => t('login'),
@@ -121,18 +123,22 @@ function login_submit(): void
 function register_form(array $errors = [], array $old = []): void
 {
     if (current_user_id() !== null) {
-        redirect('/');
+        redirect(post_login_path());
     }
     render('register', [
         'title' => t('register'),
         'errors' => $errors,
         'old' => $old,
+        'company_types' => company_types(),
     ]);
 }
 
 function register_submit(): void
 {
     csrf_check();
+    if (current_user_id() !== null) {
+        redirect(post_login_path());
+    }
     $input = [
         'business_name' => (string) ($_POST['business_name'] ?? ''),
         'owner_name' => (string) ($_POST['owner_name'] ?? ''),
@@ -140,6 +146,7 @@ function register_submit(): void
         'password' => (string) ($_POST['password'] ?? ''),
         'phone' => (string) ($_POST['phone'] ?? ''),
         'company_type' => (string) ($_POST['company_type'] ?? ''),
+        'start_onboarding' => true,
     ];
     try {
         $result = business_register($input);
@@ -147,11 +154,11 @@ function register_submit(): void
         $result = ['errors' => ['form' => 'save_failed']];
     }
     if (isset($result['errors'])) {
-        unset($input['password']);
+        unset($input['password'], $input['start_onboarding']);
         register_form($result['errors'], $input);
         return;
     }
-    redirect('/');
+    redirect('/onboarding');
 }
 
 function logout_submit(): void

@@ -51,6 +51,15 @@ function redirect(string $path): void
     throw new RedirectException($path);
 }
 
+function redirect_external(string $absoluteUrl): void
+{
+    if (preg_match('#^https://[A-Za-z0-9._~:/?#\[\]@!$&\'()*+,;=%-]+$#', $absoluteUrl) !== 1) {
+        throw new RuntimeException('Invalid external redirect.');
+    }
+    header('Location: ' . $absoluteUrl);
+    throw new RedirectException($absoluteUrl);
+}
+
 function request_path(): string
 {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

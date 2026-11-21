@@ -45,9 +45,10 @@ function business_register(array $input): array
         return ['errors' => ['email' => 'email_taken']];
     }
 
+    $startOnboarding = !empty($input['start_onboarding']);
     $tenantId = uuid();
     $userId = uuid();
-    $now = date('Y-m-d H:i:s');
+    $now = app_now()->format('Y-m-d H:i:s');
     db_begin();
     try {
         auth_login($userId, $tenantId);
@@ -60,6 +61,13 @@ function business_register(array $input): array
             'payment_bank' => null,
             'payment_account' => null,
             'company_type' => $companyType,
+            'onboarding_step' => $startOnboarding ? 'business' : 'complete',
+            'onboarding_completed_at' => $startOnboarding ? null : $now,
+            'currency' => 'NGN',
+            'address' => '',
+            'logo_path' => null,
+            'brand_primary' => '',
+            'brand_accent' => '',
             'created_at' => $now,
         ]);
         db_insert('fashion_users', [
@@ -91,7 +99,11 @@ function business_register(array $input): array
         throw $e;
     }
     lang_set('en');
-    return ['user_id' => $userId, 'tenant_id' => $tenantId];
+    return [
+        'user_id' => $userId,
+        'tenant_id' => $tenantId,
+        'onboarding' => $startOnboarding,
+    ];
 }
 
 function auth_find_user_by_email(string $email): ?array
@@ -102,6 +114,11 @@ function auth_find_user_by_email(string $email): ?array
     );
     $row = $rows[0] ?? null;
     return is_array($row) ? $row : null;
+}
+
+function auth_email_taken(string $email): bool
+{
+    return auth_find_user_by_email(strtolower(trim($email))) !== null;
 }
 
 function auth_rate_path(string $email): string

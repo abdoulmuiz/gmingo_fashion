@@ -8,7 +8,7 @@
         <label><?= e(t('company_type')) ?>
             <select name="company_type" required>
                 <option value=""><?= e(t('company_type')) ?></option>
-                <?php foreach (['tailor', 'factory', 'brand'] as $type): ?>
+                <?php foreach (($company_types ?? company_types()) as $type): ?>
                     <option value="<?= e($type) ?>" <?= ($old['company_type'] ?? '') === $type ? 'selected' : '' ?>><?= e(t('type_' . $type)) ?></option>
                 <?php endforeach; ?>
             </select>

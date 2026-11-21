@@ -2,6 +2,12 @@
 
 These logins are for a local demo only. The password for every account below is `password`.
 
+## Platform admin
+
+- Console: `/platform`
+- Email: platform@gmingo.test
+- Manages plans and shop subscriptions (suspend / reactivate)
+
 ## Tailor shop
 
 - Business: Kano Stitches Tailoring

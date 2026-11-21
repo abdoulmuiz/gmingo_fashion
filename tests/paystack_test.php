@@ -21,6 +21,7 @@ if (!is_string($connected) || !str_ends_with($connected, '_test')) {
 
 tests_reset();
 
+if (!class_exists('FakePaystackTransport', false)) {
 final class FakePaystackTransport implements PaystackTransport
 {
     /** @var list<array{method: string, url: string, headers: list<string>, body: string}> */
@@ -79,6 +80,7 @@ final class FakePaystackTransport implements PaystackTransport
         }
         return ['status' => 500, 'body' => ''];
     }
+}
 }
 
 function paystack_test_config(string $domain, string $base): void

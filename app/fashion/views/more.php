@@ -1,5 +1,9 @@
 <section class="card">
     <h1><?= e(t('more')) ?></h1>
+    <?php if (current_user_id() !== null && !subscription_has_app_access()): ?>
+        <p class="flash flash-error" role="alert"><?= e(t('subscription_access_blocked')) ?></p>
+        <p><a class="btn" href="<?= e(url('/account/subscription')) ?>"><?= e(t('subscription_account')) ?></a></p>
+    <?php endif; ?>
     <?php foreach (menu_links('more') as [$path, $label]): ?>
         <p><a href="<?= e(url($path)) ?>"><?= e(t($label)) ?></a></p>
     <?php endforeach; ?>
