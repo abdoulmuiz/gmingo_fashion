@@ -502,9 +502,18 @@ function billing_platform_query(string $sql, array $params = []): array
     if (preg_match('/\b(union|into|outfile|dumpfile|sleep|benchmark|information_schema|insert|update|delete|drop)\b/i', $bare)) {
         throw new RuntimeException('This query is not allowed.');
     }
+    $allowedTables = [
+        'fashion_subscription_checkouts',
+        'fashion_subscription_payments',
+        'fashion_subscriptions',
+        'fashion_saas_webhook_receipts',
+        'fashion_users',
+        'fashion_tenants',
+        'fashion_plans',
+    ];
     if (preg_match_all('/\b(?:from|join)\s+`?([a-z0-9_]+)/i', $bare, $matches)) {
         foreach ($matches[1] as $table) {
-            if (!in_array(strtolower($table), ['fashion_subscription_checkouts', 'fashion_users'], true)) {
+            if (!in_array(strtolower($table), $allowedTables, true)) {
                 throw new RuntimeException('This query is not allowed.');
             }
         }
@@ -515,6 +524,82 @@ function billing_platform_query(string $sql, array $params = []): array
     db_bind($statement, $params);
     $statement->execute();
     return $statement->fetchAll();
+}
+
+function saas_platform_query(string $sql, array $params = []): array
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'saas_gateway_') || str_starts_with($caller, 'billing_');
+    $allowedFile = str_ends_with($file, '/app/domain/saas_gateway.php')
+        || str_ends_with($file, '/app/domain/billing.php');
+    if (!$allowed || !$allowedFile) {
+        throw new RuntimeException('This query is only for SaaS gateway settings.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    if (preg_match('/^\s*select\b/i', $sql) !== 1) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    if (preg_match('/\b(union|into|outfile|dumpfile|sleep|benchmark|information_schema|insert|update|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $allowedTables = ['fashion_saas_gateway_settings', 'fashion_saas_webhook_receipts'];
+    if (preg_match_all('/\b(?:from|join)\s+`?([a-z0-9_]+)/i', $bare, $matches)) {
+        foreach ($matches[1] as $table) {
+            if (!in_array(strtolower($table), $allowedTables, true)) {
+                throw new RuntimeException('This query is not allowed.');
+            }
+        }
+    } else {
+        throw new RuntimeException('This query is not allowed.');
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->fetchAll();
+}
+
+function saas_platform_execute(string $sql, array $params = []): int
+{
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    $caller = (string) ($trace[1]['function'] ?? '');
+    $file = str_replace('\\', '/', (string) ($trace[0]['file'] ?? ''));
+    $allowed = str_starts_with($caller, 'saas_gateway_') || str_starts_with($caller, 'billing_');
+    $allowedFile = str_ends_with($file, '/app/domain/saas_gateway.php')
+        || str_ends_with($file, '/app/domain/billing.php');
+    if (!$allowed || !$allowedFile) {
+        throw new RuntimeException('This write is only for SaaS gateway settings.');
+    }
+    if (str_contains($sql, ';') || preg_match('/--|\/\*|\*\/|#/', $sql)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/^\s*(insert|update)\b/i', $sql) !== 1) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    $bare = db_strip_literals($sql);
+    $okTable = preg_match('/\b(?:into|update)\s+`?fashion_saas_(?:gateway_settings|webhook_receipts)`?\b/i', $bare) === 1;
+    if (!$okTable) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    if (preg_match('/\b(union|outfile|dumpfile|sleep|benchmark|information_schema|delete|drop)\b/i', $bare)) {
+        throw new RuntimeException('This write is not allowed.');
+    }
+    foreach ($params as $key => $value) {
+        if (is_float($value)) {
+            throw new RuntimeException('Floats are not allowed. Store money as whole kobo.');
+        }
+        if (preg_match('/tenant_id/i', (string) $key) && (string) $value !== subscription_platform_tenant_id()) {
+            throw new RuntimeException('SaaS gateway rows must use the platform tenant.');
+        }
+    }
+    $statement = db()->prepare($sql);
+    db_bind($statement, $params);
+    $statement->execute();
+    return $statement->rowCount();
 }
 
 function admin_platform_query(string $sql, array $params = []): array

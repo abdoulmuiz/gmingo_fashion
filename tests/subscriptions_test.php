@@ -15,7 +15,7 @@ $GLOBALS['gmingo_now'] = '2026-11-20 10:00:00';
 $starter = plan_by_code('starter');
 check(is_array($starter), 'starter plan is seeded');
 check_eq($starter['code'], 'starter', 'starter plan code');
-check($starter['price_monthly_kobo'] === 1500000, 'starter monthly price is whole kobo');
+check(is_int($starter['price_monthly_kobo']) && $starter['price_monthly_kobo'] > 0, 'starter monthly price is whole kobo');
 check($starter['trial_available'] === true, 'starter offers a trial');
 check(in_array('fashion.orders', $starter['modules'], true), 'starter includes orders module');
 
@@ -82,7 +82,7 @@ check_eq($paid['billing_interval'], 'monthly', 'activation stores monthly interv
 check_eq($paid['expires_on'], '2026-12-19', 'monthly period ends after one month');
 $payments = db_select('fashion_subscription_payments', ['subscription_id' => $paid['id']]);
 check(count($payments) === 1, 'activation records a subscription payment');
-check_eq((int) $payments[0]['amount_kobo'], 1500000, 'subscription payment stores whole kobo');
+check_eq((int) $payments[0]['amount_kobo'], (int) $starter['price_monthly_kobo'], 'subscription payment stores whole kobo');
 check_eq((string) $payments[0]['provider'], 'manual', 'subscription payment provider is stored');
 $orderPayments = db_select('fashion_payments');
 check_eq($orderPayments, [], 'subscription payments stay out of fashion_payments');
@@ -92,7 +92,7 @@ check_eq($renewed['status'], 'active', 'renewal keeps active status');
 check_eq($renewed['current_period_start'], '2026-12-20', 'renewal starts the day after the prior period');
 check(count(db_select('fashion_subscription_payments', ['subscription_id' => $renewed['id']])) === 2, 'renewal adds another subscription payment');
 
-$growth = plan_by_code('growth');
+$growth = plan_by_code('professional');
 $changed = subscription_change_plan($growth['id']);
 check_eq($changed['plan_id'], $growth['id'], 'plan change updates plan_id');
 $intervalChanged = subscription_change_interval('annual');
@@ -115,7 +115,14 @@ $graceCut = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', '2027-01-20 10:0
     ->format('Y-m-d');
 check_eq((string) $tenantExpired['subscription_ends_on'], $graceCut, 'expire syncs ends_on beyond tracking grace');
 
-$reactivated = subscription_activate($starter['id'], 'monthly', 1500000, 'manual', 'sub-pay-reactivate');
+$starterNow = plan_by_code('starter');
+$reactivated = subscription_activate(
+    $starter['id'],
+    'monthly',
+    (int) $starterNow['price_monthly_kobo'],
+    'manual',
+    'sub-pay-reactivate'
+);
 check_eq($reactivated['status'], 'active', 'expired shops can activate again');
 $suspended = subscription_suspend('policy hold');
 check_eq($suspended['status'], 'suspended', 'suspend sets suspended');

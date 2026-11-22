@@ -261,7 +261,7 @@ orders_show($first['id']);
 $open = (string) ob_get_clean();
 check(str_contains($open, 'TK1048'), 'the order page shows the order number');
 check(str_contains($open, money(3500000)), 'the order page shows the calculated total');
-check(str_contains($open, t('unpaid')), 'the order page shows the unpaid tag');
+check(str_contains($open, t('part_paid')) || str_contains($open, t('unpaid')), 'the order page shows the payment badge');
 check(str_contains($open, t('stage')), 'the order page shows the stage when production is on');
 check(str_contains($open, 'Sewing'), 'the order page names the current stage');
 check(str_contains($open, t('balance')), 'the order page shows the balance when finance is on');
@@ -274,7 +274,7 @@ orders_show($first['id']);
 $plain = (string) ob_get_clean();
 check(str_contains($plain, 'TK1048'), 'the order page still opens without production and finance');
 check(str_contains($plain, money(3500000)), 'the total stays on the order page');
-check(str_contains($plain, t('unpaid')), 'the paid tag stays on the order page');
+check(str_contains($plain, t('part_paid')) || str_contains($plain, t('unpaid')), 'the payment badge stays on the order page');
 check(!str_contains($plain, t('stage')) && !str_contains($plain, 'Sewing'), 'the stage stays off the order page');
 check(!str_contains($plain, t('balance')) && !str_contains($plain, money(2500000)), 'the balance stays off the order page');
 

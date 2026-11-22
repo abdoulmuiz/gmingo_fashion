@@ -90,9 +90,12 @@ $_GET['q'] = '';
 ob_start();
 customers_index();
 $list = (string) ob_get_clean();
-check(!str_contains($list, '<script>'), 'customer list escapes HTML');
+check(!str_contains($list, 'Amina <script>'), 'customer list does not print raw script tags in names');
 check(str_contains($list, '&lt;script&gt;'), 'customer list shows the escaped name');
-check(str_contains($list, 'name="csrf"'), 'customer search form has a CSRF token');
+check(str_contains($list, 'customers-page'), 'customer list uses the redesigned page shell');
+check(str_contains($list, 'customers-table') || str_contains($list, 'customers-empty'), 'customer list shows a table or empty state');
+check(str_contains($list, 'name="q"'), 'customer search keeps the q field');
+check(!preg_match('/customers-filters[\s\S]{0,800}?name="csrf"/', $list), 'read-only customer filters do not include a CSRF field');
 
 ob_start();
 customers_show($amina['id']);

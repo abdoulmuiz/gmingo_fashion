@@ -1,34 +1,108 @@
-<section class="card">
-    <p class="eyebrow"><?= e(t($customer['customer_type'] === 'vip' ? 'vip' : 'regular')) ?></p>
-    <h1><?= e($customer['name']) ?></h1>
-    <p class="meta"><?= e(t('customer_since')) ?> <?= e(date('j M Y', strtotime((string) $customer['created_at']))) ?></p>
-    <div class="stats">
-        <div><span><?= e(t('order_count')) ?></span><strong><?= e((string) $customer['order_count']) ?></strong></div>
-        <div><span><?= e(t('total_spent')) ?></span><strong><?= e(money((int) $customer['spent_kobo'])) ?></strong></div>
-        <div><span><?= e(t('amount_owed')) ?></span><strong><?= e(money((int) $customer['owed_kobo'])) ?></strong></div>
+<?php
+$isVip = ($customer['customer_type'] ?? '') === 'vip';
+$displayName = order_display_customer_name((string) $customer['name']);
+ob_start();
+?>
+<div class="customer-detail-hero">
+    <div class="customer-detail-identity">
+        <?php $name = $displayName; require __DIR__ . '/../partials/ui_avatar.php'; ?>
+        <div>
+            <div class="detail-meta-row">
+                <span class="orders-badge is-<?= $isVip ? 'orange' : 'blue' ?>"><?= e(t($isVip ? 'vip' : 'regular')) ?></span>
+            </div>
+            <h1><?= e($displayName) ?></h1>
+            <p class="meta"><?= e(t('customer_since')) ?> <?= e(date('j M Y', strtotime((string) $customer['created_at']))) ?></p>
+            <p class="meta"><?= e((string) $customer['phone']) ?></p>
+        </div>
     </div>
-    <div class="actions">
-        <a class="btn" href="<?= e(tel_href((string) $customer['phone'])) ?>"><?= e(t('call')) ?></a>
-        <a class="btn btn-whatsapp" href="<?= e(whatsapp_href((string) $customer['phone'])) ?>"><?= e(t('whatsapp')) ?></a>
+    <div class="ui-page-header-actions">
+        <a class="btn btn-quiet" href="<?= e(tel_href((string) $customer['phone'])) ?>">
+            <?= ui_icon('phone', 'ui-icon') ?>
+            <span><?= e(t('call')) ?></span>
+        </a>
+        <a class="btn btn-whatsapp" href="<?= e(whatsapp_href((string) $customer['phone'])) ?>">
+            <?= ui_icon('message-circle', 'ui-icon') ?>
+            <span><?= e(t('whatsapp')) ?></span>
+        </a>
         <?php if (route_defined('GET', '/orders/new')): ?>
-            <a class="btn" href="<?= e(url('/orders/new?customer=' . $customer['id'])) ?>"><?= e(t('new_order')) ?></a>
+            <a class="btn" href="<?= e(url('/orders/new?customer=' . $customer['id'])) ?>">
+                <?= ui_icon('plus', 'ui-icon') ?>
+                <span><?= e(t('new_order')) ?></span>
+            </a>
         <?php endif; ?>
     </div>
-</section>
-<section class="card">
-    <h2><?= e(t('order_history')) ?></h2>
-    <?php if ($customer['orders'] === []): ?>
-        <p><?= e(t('no_orders')) ?></p>
-    <?php endif; ?>
-    <?php foreach ($customer['orders'] as $order): ?>
-        <?php $orderOpen = route_defined('GET', '/orders/{id}'); ?>
-        <?php if ($orderOpen): ?><a class="line" href="<?= e(url('/orders/' . $order['id'])) ?>"><?php else: ?><div class="line"><?php endif; ?>
-            <strong><?= e($order['order_number']) ?></strong>
-            <span><?= e($order['due_date']) ?></span>
-            <span><?= e(money((int) $order['balance_kobo'])) ?></span>
-        <?php if ($orderOpen): ?></a><?php else: ?></div><?php endif; ?>
+</div>
+<?php
+$hero = ob_get_clean();
+$title = $displayName;
+$back_href = '/customers';
+$back_label = t('customers');
+$subtitle = null;
+$actions_html = '';
+require __DIR__ . '/../partials/ui_page_header.php';
+echo $hero;
+
+$cards = [
+    ['label' => t('order_count'), 'value' => (string) $customer['order_count'], 'tone' => 'blue'],
+    ['label' => t('total_spent'), 'value' => money((int) $customer['spent_kobo']), 'tone' => 'green'],
+    ['label' => t('amount_owed'), 'value' => money((int) $customer['owed_kobo']), 'tone' => 'orange'],
+];
+?>
+<section class="dash-kpis" aria-label="<?= e(t('summary')) ?>">
+    <?php foreach ($cards as $card): ?>
+        <article class="dash-kpi dash-kpi-<?= e((string) $card['tone']) ?>">
+            <span class="dash-kpi-top">
+                <span class="dash-kpi-body">
+                    <span class="dash-kpi-label"><?= e((string) $card['label']) ?></span>
+                    <strong class="dash-kpi-value"><?= e((string) $card['value']) ?></strong>
+                </span>
+            </span>
+        </article>
     <?php endforeach; ?>
 </section>
+
+<div class="detail-layout" style="margin-top:1.25rem">
+    <div class="detail-main">
+        <section class="card">
+            <h2><?= e(t('order_history')) ?></h2>
+            <?php if ($customer['orders'] === []): ?>
+                <p><?= e(t('no_orders')) ?></p>
+            <?php else: ?>
+                <div class="ui-table-wrap">
+                    <table class="ui-table">
+                        <thead>
+                            <tr>
+                                <th><?= e(t('orders')) ?></th>
+                                <th><?= e(t('due_date')) ?></th>
+                                <th class="is-num"><?= e(t('balance')) ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($customer['orders'] as $order): ?>
+                                <?php $orderOpen = route_defined('GET', '/orders/{id}'); ?>
+                                <tr>
+                                    <td data-label="<?= e(t('orders')) ?>">
+                                        <?php if ($orderOpen): ?>
+                                            <a href="<?= e(url('/orders/' . $order['id'])) ?>"><strong><?= e($order['order_number']) ?></strong></a>
+                                        <?php else: ?>
+                                            <strong><?= e($order['order_number']) ?></strong>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td data-label="<?= e(t('due_date')) ?>"><?= e($order['due_date']) ?></td>
+                                    <td class="is-num" data-label="<?= e(t('balance')) ?>"><?= e(money((int) $order['balance_kobo'])) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+    <aside class="detail-side">
+        <?php /* contact already in hero; keep side open for future notes */ ?>
+    </aside>
+</div>
+
 <?php if (module_enabled('fashion.measurements') && is_array($measure)): ?>
     <?php
     $currentByGarment = [];
@@ -56,7 +130,7 @@
         }
     }
     ?>
-    <section class="card" data-measure>
+    <section class="card" data-measure style="margin-top:1.25rem">
         <h2><?= e(t('measurements')) ?></h2>
         <?php if ($garmentCards === []): ?>
             <p><?= e(t('no_measurements')) ?></p>

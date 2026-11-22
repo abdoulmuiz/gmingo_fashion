@@ -150,8 +150,8 @@ check($blocked['kind'] === 'redirect' && $blocked['location'] === '/account/subs
 
 auth_logout();
 check(login_user(platform_admin_email(), platform_admin_password()) === null, 'platform admin signs in again');
-$growth = plan_by_code('growth');
-check(is_array($growth), 'growth plan exists');
+$growth = plan_by_code('professional');
+check(is_array($growth), 'professional plan exists');
 $reactivate = platform_visit('POST', '/platform/tenants/' . $shopTenant, [
     'csrf' => csrf_token(),
     'action' => 'reactivate',
@@ -161,7 +161,7 @@ $reactivate = platform_visit('POST', '/platform/tenants/' . $shopTenant, [
 check($reactivate['kind'] === 'redirect', 'reactivate redirects');
 $afterReactivate = platform_tenant_get($shopTenant);
 check_eq($afterReactivate['subscription']['status'] ?? '', 'active', 'reactivate sets active');
-check_eq($afterReactivate['subscription']['plan_id'] ?? '', (string) $growth['id'], 'reactivate can set growth plan');
+check_eq($afterReactivate['subscription']['plan_id'] ?? '', (string) $growth['id'], 'reactivate can set professional plan');
 
 $change = platform_change_tenant_plan($shopTenant, (string) plan_by_code('starter')['id']);
 check_eq($change['plan_id'], (string) plan_by_code('starter')['id'], 'platform can change shop plan');
@@ -197,6 +197,7 @@ $update = plan_update((string) $created['id'], [
     'description' => 'Updated',
     'price_monthly_kobo' => 260000,
     'price_annual_kobo' => 2600000,
+    'confirm_price_change' => true,
     'trial_available' => true,
     'trial_days' => 10,
     'active' => true,

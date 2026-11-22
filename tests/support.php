@@ -42,6 +42,8 @@ function tests_reset(): void
         'fashion_subscription_events',
         'fashion_subscription_payments',
         'fashion_subscription_checkouts',
+        'fashion_saas_webhook_receipts',
+        'fashion_saas_gateway_settings',
         'fashion_subscriptions',
         'fashion_stage_events',
         'fashion_stage_definitions',

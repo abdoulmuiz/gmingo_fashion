@@ -1,3 +1,5 @@
+<?php require __DIR__ . '/partials/settings_nav.php'; ?>
+<div class="settings-layout">
 <section class="card">
     <h1><?= e(t('stages_settings')) ?></h1>
     <?php foreach ($stages as $stage): ?>
@@ -56,3 +58,4 @@
         <button class="btn" type="submit"><?= e(t('save')) ?></button>
     </form>
 </section>
+</div>

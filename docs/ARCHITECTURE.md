@@ -41,7 +41,7 @@ Separate from customer-order payments.
 
 | Table | Purpose |
 | --- | --- |
-| `fashion_plans` | Platform plan catalogue (monthly/annual kobo, trial, limits JSON, modules JSON) |
+| `fashion_plans` | Platform plan catalogue (monthly/annual kobo, currency, features, popularity, sort order, price_version, trial, limits/modules JSON) |
 | `fashion_subscriptions` | One current subscription row per tenant |
 | `fashion_subscription_payments` | SaaS billing records (append-only) |
 | `fashion_subscription_events` | Lifecycle history (append-only) |
@@ -68,18 +68,22 @@ Staff management UI: `/staff` (requires module `fashion.staff` and `staff.manage
 
 ## Subscription billing (Phase 6)
 
-Platform (Gmingo) Paystack keys in config — not shop `fashion_payment_settings`.
+Platform (Gmingo) SaaS Paystack — not shop `fashion_payment_settings`. Secrets prefer encrypted `fashion_saas_gateway_settings` (`/platform/gateway`); config `saas_paystack_*` remains a fallback. See `docs/BILLING.md`.
 
 | Piece | Role |
 | --- | --- |
+| `fashion_saas_gateway_settings` | Encrypted platform keys, env, enable flag |
 | `fashion_subscription_checkouts` | Mutable pending/paid checkout intents |
+| `fashion_saas_webhook_receipts` | Idempotent webhook event keys |
 | `app/payments/SaasPaystack.php` | Initialize / verify / webhook parse |
-| `app/domain/billing.php` | Owner checkout start, fulfill, webhook |
-| `/webhooks/saas-paystack` | Authoritative fulfill on charge.success for `sb…` references |
+| `app/domain/billing.php` | Owner checkout start, fulfill, webhook lifecycle |
+| `/webhooks/saas-paystack` | Authoritative fulfill + subscription/invoice events |
 | `/account/billing/return` | GET peek only (pending / paid / failed UI) |
 | `POST /account/billing/verify` | Optional owner-triggered verify (CSRF + server-side Paystack verify) |
+| `/platform/gateway` | Platform payment gateway settings |
+| `/platform/payments` | Cross-tenant SaaS payment list |
 
-Successful fulfill calls `subscription_fulfill_checkout` → activate or renew, then append-only `fashion_subscription_payments`. Fulfillment is idempotent. Manual renew on the account page stays available when SaaS keys are unset.
+Successful fulfill calls `subscription_fulfill_checkout` → activate or renew, then append-only `fashion_subscription_payments`. Fulfillment is idempotent. Optional Paystack plan codes on `fashion_plans` enable recurring initialize. Manual renew stays available when checkout is disabled.
 
 ## Platform administration (Phase 5)
 
@@ -89,7 +93,7 @@ Bootstrap requires a securely configured `platform_admin_password` (no empty/def
 
 Cross-tenant reads use `admin_platform_query` (only from `app/domain/platform.php`). Mutations bind the target shop with `auth_bind_tenant()` then call existing subscription lifecycle helpers.
 
-Routes: `/platform`, `/platform/plans`, `/platform/tenants/{id}` (suspend / reactivate / change plan), `/platform/password`.
+Routes: `/platform`, `/platform/plans`, `/platform/tenants/{id}` (suspend / reactivate / change plan), `/platform/password`, `/platform/gateway`, `/platform/payments`. Public `/pricing` reads the active plan catalogue (no hard-coded amounts).
 
 ## Onboarding (Phase 3)
 

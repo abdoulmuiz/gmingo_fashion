@@ -32,8 +32,18 @@ require_once __DIR__ . '/fashion/controllers/branches.php';
 require_once __DIR__ . '/fashion/controllers/reports.php';
 require_once __DIR__ . '/fashion/controllers/broadcasts.php';
 require_once __DIR__ . '/fashion/controllers/storefront.php';
+require_once __DIR__ . '/fashion/controllers/pricing.php';
+
+route('GET', '/pricing', function (): void {
+    pricing_show();
+});
 
 route('GET', '/', function (): void {
+    if (current_user_id() === null || current_tenant_id() === null) {
+        http_response_code(200);
+        landing_show();
+        return;
+    }
     require_access('/');
     http_response_code(200);
     home_show();
@@ -77,6 +87,18 @@ route('GET', '/platform/tenants/{id}', function (array $params): void {
 
 route('POST', '/platform/tenants/{id}', function (array $params): void {
     platform_tenant_action((string) $params['id']);
+});
+
+route('GET', '/platform/gateway', function (): void {
+    platform_gateway_show();
+});
+
+route('POST', '/platform/gateway', function (): void {
+    platform_gateway_submit();
+});
+
+route('GET', '/platform/payments', function (): void {
+    platform_payments_index();
 });
 
 route('GET', '/login', function (): void {

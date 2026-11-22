@@ -170,6 +170,28 @@ $loginHtml = (string) ob_get_clean();
 check(str_contains($loginHtml, 'name="csrf"'), 'login form includes a CSRF token');
 check(str_contains($loginHtml, t('login')) || str_contains($loginHtml, 'Log in') || str_contains($loginHtml, 'Shiga'), 'login page renders');
 check(!str_contains($loginHtml, 'bottom-nav'), 'login page hides the bottom navigation');
+check(!str_contains($loginHtml, 'pricing-grid'), 'login page has no pricing cards');
+check(!preg_match('#mast-actions[^>]*>[\s\S]*?href="[^"]*/login"#', $loginHtml), 'login page hides the secondary Login mast button');
+check(!preg_match('#mast-actions[^>]*>[\s\S]*?href="[^"]*/pricing"#', $loginHtml), 'login page hides Pricing in the mast');
+check(str_contains($loginHtml, t('login_submit')), 'login form submit uses Continue, not Log in');
+check(!preg_match('#<button class="btn"[^>]*>\s*' . preg_quote(t('login'), '#') . '\s*</button>#', $loginHtml), 'login form has no Log in button');
+
+$_SERVER['REQUEST_URI'] = base_path() . '/';
+ob_start();
+router_dispatch('GET', '/');
+$landingHtml = (string) ob_get_clean();
+check(str_contains($landingHtml, 'is-landing') || str_contains($landingHtml, 'lp-hero'), 'guest home uses marketing landing chrome');
+check(str_contains($landingHtml, 'lp-trust'), 'guest home shows trust bar');
+check(str_contains($landingHtml, 'lp-hero'), 'guest home shows hero');
+check(str_contains($landingHtml, 'lp-features') || str_contains($landingHtml, 'id="features"'), 'guest home shows feature row');
+check(str_contains($landingHtml, 'lp-dash-mock') || str_contains($landingHtml, 'id="showcase"'), 'guest home shows product showcase mock');
+check(str_contains($landingHtml, 'landing-pricing') || str_contains($landingHtml, 'pricing-grid'), 'guest home shows pricing section');
+check(str_contains($landingHtml, t('landing_pricing_title')) || str_contains($landingHtml, 'Choose a plan'), 'guest home shows pricing headline');
+check(str_contains($landingHtml, 'pricing-amount'), 'guest home pricing cards render amounts from helpers');
+check(str_contains($landingHtml, 'lp-testimonials'), 'guest home shows testimonials');
+check(str_contains($landingHtml, 'lp-banner'), 'guest home shows bottom CTA banner');
+check(str_contains($landingHtml, 'lp-footer'), 'guest home shows marketing footer');
+check(str_contains($landingHtml, t('landing_get_started_free')) || str_contains($landingHtml, 'Get started free'), 'guest home offers Get started free');
 
 $_SERVER['REQUEST_URI'] = base_path() . '/register';
 ob_start();
@@ -186,8 +208,10 @@ check(str_contains($registerHtml, 'name="csrf"'), 'register form includes a CSRF
 check(str_contains($registerHtml, 'name="business_name"'), 'register form asks for the shop');
 
 $openWhenSignedOut = [
+    '/',
     '/login',
     '/register',
+    '/pricing',
     '/pay/return',
     '/track/{token}',
     '/track/{token}/invoice.png',

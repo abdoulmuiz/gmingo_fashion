@@ -21,7 +21,7 @@ final class PaystackClient
         return base64_encode($iv . $tag . $cipher);
     }
 
-    public static function open(string $encrypted): self
+    public static function reveal(string $encrypted): string
     {
         $raw = base64_decode($encrypted, true);
         if (!is_string($raw) || strlen($raw) < 29) {
@@ -34,7 +34,12 @@ final class PaystackClient
         if (!is_string($secret) || $secret === '') {
             throw new RuntimeException('Could not read the Paystack secret.');
         }
-        return new self($secret);
+        return $secret;
+    }
+
+    public static function open(string $encrypted): self
+    {
+        return new self(self::reveal($encrypted));
     }
 
     public function matches(string $candidate): bool

@@ -30,6 +30,40 @@ function plan_decode_json(string $raw): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function plan_select_sql(): string
+{
+    return 'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo, currency,
+                trial_available, trial_days, active, limits_json, modules_json, features_json,
+                is_popular, sort_order, icon, price_version,
+                paystack_plan_code_monthly, paystack_plan_code_annual, created_at, updated_at
+         FROM fashion_plans';
+}
+
+function plan_features_clean(mixed $raw): array
+{
+    if (is_string($raw)) {
+        $raw = plan_decode_json($raw);
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+    $out = [];
+    foreach ($raw as $feature) {
+        if (!is_string($feature)) {
+            continue;
+        }
+        $feature = trim($feature);
+        if ($feature === '' || strlen($feature) > 200) {
+            continue;
+        }
+        $out[] = $feature;
+        if (count($out) >= 40) {
+            break;
+        }
+    }
+    return $out;
+}
+
 function plan_present(array $row): array
 {
     $limits = plan_decode_json((string) ($row['limits_json'] ?? '{}'));
@@ -54,6 +88,10 @@ function plan_present(array $row): array
             $cleanLimits[$key] = (int) $value;
         }
     }
+    $currency = strtoupper(trim((string) ($row['currency'] ?? 'NGN')));
+    if ($currency === '' || strlen($currency) !== 3) {
+        $currency = 'NGN';
+    }
     return [
         'id' => (string) $row['id'],
         'code' => (string) $row['code'],
@@ -61,14 +99,30 @@ function plan_present(array $row): array
         'description' => (string) ($row['description'] ?? ''),
         'price_monthly_kobo' => (int) $row['price_monthly_kobo'],
         'price_annual_kobo' => (int) $row['price_annual_kobo'],
+        'currency' => $currency,
         'trial_available' => (int) ($row['trial_available'] ?? 0) === 1,
         'trial_days' => (int) ($row['trial_days'] ?? 0),
         'active' => (int) ($row['active'] ?? 0) === 1,
         'limits' => $cleanLimits,
         'modules' => $moduleList,
+        'features' => plan_features_clean($row['features_json'] ?? '[]'),
+        'is_popular' => (int) ($row['is_popular'] ?? 0) === 1,
+        'sort_order' => (int) ($row['sort_order'] ?? 100),
+        'icon' => (string) ($row['icon'] ?? ''),
+        'price_version' => (int) ($row['price_version'] ?? 1),
+        'paystack_plan_code_monthly' => (string) ($row['paystack_plan_code_monthly'] ?? ''),
+        'paystack_plan_code_annual' => (string) ($row['paystack_plan_code_annual'] ?? ''),
         'created_at' => (string) ($row['created_at'] ?? ''),
         'updated_at' => (string) ($row['updated_at'] ?? ''),
     ];
+}
+
+function plan_paystack_code(array $plan, string $interval): string
+{
+    if ($interval === 'annual') {
+        return trim((string) ($plan['paystack_plan_code_annual'] ?? ''));
+    }
+    return trim((string) ($plan['paystack_plan_code_monthly'] ?? ''));
 }
 
 function plan_get(string $planId): ?array
@@ -77,9 +131,7 @@ function plan_get(string $planId): ?array
         return null;
     }
     $rows = subscription_platform_query(
-        'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
-                trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
-         FROM fashion_plans
+        plan_select_sql() . '
          WHERE id = :id
          LIMIT 1',
         ['id' => $planId]
@@ -95,9 +147,7 @@ function plan_by_code(string $code): ?array
         return null;
     }
     $rows = subscription_platform_query(
-        'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
-                trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
-         FROM fashion_plans
+        plan_select_sql() . '
          WHERE code = :code
          LIMIT 1',
         ['code' => $code]
@@ -109,11 +159,9 @@ function plan_by_code(string $code): ?array
 function plan_list_active(): array
 {
     $rows = subscription_platform_query(
-        'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
-                trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
-         FROM fashion_plans
+        plan_select_sql() . '
          WHERE active = 1
-         ORDER BY price_monthly_kobo ASC, name ASC'
+         ORDER BY sort_order ASC, price_monthly_kobo ASC, name ASC'
     );
     $out = [];
     foreach ($rows as $row) {
@@ -124,13 +172,17 @@ function plan_list_active(): array
     return $out;
 }
 
+/** Active plans for the public pricing page (no admin fields beyond catalogue). */
+function plan_list_public(): array
+{
+    return plan_list_active();
+}
+
 function plan_list_all(): array
 {
     $rows = subscription_platform_query(
-        'SELECT id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
-                trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
-         FROM fashion_plans
-         ORDER BY active DESC, price_monthly_kobo ASC, name ASC'
+        plan_select_sql() . '
+         ORDER BY active DESC, sort_order ASC, price_monthly_kobo ASC, name ASC'
     );
     $out = [];
     foreach ($rows as $row) {
@@ -139,6 +191,14 @@ function plan_list_all(): array
         }
     }
     return $out;
+}
+
+function plan_amount_kobo(array $plan, string $interval): int
+{
+    if ($interval === 'annual') {
+        return (int) $plan['price_annual_kobo'];
+    }
+    return (int) $plan['price_monthly_kobo'];
 }
 
 function plan_update(string $planId, array $input): array
@@ -151,6 +211,7 @@ function plan_update(string $planId, array $input): array
     $description = trim((string) ($input['description'] ?? $plan['description']));
     $monthly = $input['price_monthly_kobo'] ?? $plan['price_monthly_kobo'];
     $annual = $input['price_annual_kobo'] ?? $plan['price_annual_kobo'];
+    $currency = strtoupper(trim((string) ($input['currency'] ?? $plan['currency'] ?? 'NGN')));
     $trialAvailable = array_key_exists('trial_available', $input)
         ? !empty($input['trial_available'])
         : $plan['trial_available'];
@@ -158,8 +219,20 @@ function plan_update(string $planId, array $input): array
         ? (int) $input['trial_days']
         : $plan['trial_days'];
     $active = array_key_exists('active', $input) ? !empty($input['active']) : $plan['active'];
+    $isPopular = array_key_exists('is_popular', $input) ? !empty($input['is_popular']) : $plan['is_popular'];
+    $sortOrder = array_key_exists('sort_order', $input) ? (int) $input['sort_order'] : $plan['sort_order'];
+    $icon = array_key_exists('icon', $input) ? trim((string) $input['icon']) : $plan['icon'];
     $limits = is_array($input['limits'] ?? null) ? $input['limits'] : $plan['limits'];
     $modules = is_array($input['modules'] ?? null) ? $input['modules'] : $plan['modules'];
+    $features = array_key_exists('features', $input)
+        ? plan_features_clean($input['features'])
+        : $plan['features'];
+    $paystackMonthly = array_key_exists('paystack_plan_code_monthly', $input)
+        ? trim((string) $input['paystack_plan_code_monthly'])
+        : (string) $plan['paystack_plan_code_monthly'];
+    $paystackAnnual = array_key_exists('paystack_plan_code_annual', $input)
+        ? trim((string) $input['paystack_plan_code_annual'])
+        : (string) $plan['paystack_plan_code_annual'];
     $errors = [];
     if ($name === '' || strlen($name) > 120) {
         $errors['name'] = 'invalid_plan_name';
@@ -173,11 +246,31 @@ function plan_update(string $planId, array $input): array
     if (!is_int($annual) || $annual < 0) {
         $errors['price_annual_kobo'] = 'invalid_price';
     }
+    if ($currency !== 'NGN') {
+        $errors['currency'] = 'invalid_plan_currency';
+    }
     if ($trialAvailable && $trialDays < 1) {
         $errors['trial_days'] = 'invalid_trial_days';
     }
     if (!$trialAvailable) {
         $trialDays = 0;
+    }
+    if ($sortOrder < 0 || $sortOrder > 9999) {
+        $errors['sort_order'] = 'invalid_sort_order';
+    }
+    if (strlen($icon) > 40 || ($icon !== '' && !preg_match('/^[a-z0-9_-]+$/', $icon))) {
+        $errors['icon'] = 'invalid_plan_icon';
+    }
+    if ($paystackMonthly !== '' && !preg_match('/^[A-Za-z0-9_-]{3,80}$/', $paystackMonthly)) {
+        $errors['paystack_plan_code_monthly'] = 'invalid_paystack_plan_code';
+    }
+    if ($paystackAnnual !== '' && !preg_match('/^[A-Za-z0-9_-]{3,80}$/', $paystackAnnual)) {
+        $errors['paystack_plan_code_annual'] = 'invalid_paystack_plan_code';
+    }
+    $priceChanged = $monthly !== (int) $plan['price_monthly_kobo']
+        || $annual !== (int) $plan['price_annual_kobo'];
+    if ($priceChanged && empty($input['confirm_price_change'])) {
+        $errors['confirm_price_change'] = 'confirm_price_change_required';
     }
     $cleanLimits = [];
     foreach (subscription_limit_keys() as $key) {
@@ -206,6 +299,31 @@ function plan_update(string $planId, array $input): array
     if ($errors !== []) {
         return ['errors' => $errors];
     }
+    $priceVersion = (int) $plan['price_version'];
+    if ($priceChanged) {
+        $priceVersion++;
+        // Stale Paystack recurring mappings must not keep charging the old amount
+        // unless the admin explicitly re-enters plan codes in this save.
+        if (!array_key_exists('paystack_plan_code_monthly', $input)
+            || trim((string) $input['paystack_plan_code_monthly']) === '') {
+            $paystackMonthly = '';
+        }
+        if (!array_key_exists('paystack_plan_code_annual', $input)
+            || trim((string) $input['paystack_plan_code_annual']) === '') {
+            $paystackAnnual = '';
+        }
+    }
+    if ($isPopular) {
+        subscription_platform_execute(
+            'UPDATE fashion_plans SET is_popular = 0, updated_at = :updated_at
+             WHERE tenant_id = :tenant_id AND id <> :id',
+            [
+                'tenant_id' => subscription_platform_tenant_id(),
+                'id' => $planId,
+                'updated_at' => app_now()->format('Y-m-d H:i:s'),
+            ]
+        );
+    }
     $now = app_now()->format('Y-m-d H:i:s');
     subscription_platform_execute(
         'UPDATE fashion_plans
@@ -213,11 +331,19 @@ function plan_update(string $planId, array $input): array
              description = :description,
              price_monthly_kobo = :price_monthly_kobo,
              price_annual_kobo = :price_annual_kobo,
+             currency = :currency,
              trial_available = :trial_available,
              trial_days = :trial_days,
              active = :active,
              limits_json = :limits_json,
              modules_json = :modules_json,
+             features_json = :features_json,
+             is_popular = :is_popular,
+             sort_order = :sort_order,
+             icon = :icon,
+             price_version = :price_version,
+             paystack_plan_code_monthly = :paystack_plan_code_monthly,
+             paystack_plan_code_annual = :paystack_plan_code_annual,
              updated_at = :updated_at
          WHERE id = :id AND tenant_id = :tenant_id',
         [
@@ -227,11 +353,19 @@ function plan_update(string $planId, array $input): array
             'description' => $description,
             'price_monthly_kobo' => $monthly,
             'price_annual_kobo' => $annual,
+            'currency' => $currency,
             'trial_available' => $trialAvailable ? 1 : 0,
             'trial_days' => $trialDays,
             'active' => $active ? 1 : 0,
             'limits_json' => json_encode($cleanLimits, JSON_THROW_ON_ERROR),
             'modules_json' => json_encode(array_values(array_unique($cleanModules)), JSON_THROW_ON_ERROR),
+            'features_json' => json_encode($features, JSON_THROW_ON_ERROR),
+            'is_popular' => $isPopular ? 1 : 0,
+            'sort_order' => $sortOrder,
+            'icon' => $icon,
+            'price_version' => $priceVersion,
+            'paystack_plan_code_monthly' => $paystackMonthly,
+            'paystack_plan_code_annual' => $paystackAnnual,
             'updated_at' => $now,
         ]
     );
@@ -239,7 +373,7 @@ function plan_update(string $planId, array $input): array
     if ($updated === null) {
         throw new RuntimeException('Plan was not updated.');
     }
-    return ['plan' => $updated];
+    return ['plan' => $updated, 'price_changed' => $priceChanged];
 }
 
 function plan_create(array $input): array
@@ -249,11 +383,16 @@ function plan_create(array $input): array
     $description = trim((string) ($input['description'] ?? ''));
     $monthly = $input['price_monthly_kobo'] ?? null;
     $annual = $input['price_annual_kobo'] ?? null;
+    $currency = strtoupper(trim((string) ($input['currency'] ?? 'NGN')));
     $trialAvailable = !empty($input['trial_available']);
     $trialDays = (int) ($input['trial_days'] ?? 0);
     $active = !array_key_exists('active', $input) || !empty($input['active']);
+    $isPopular = !empty($input['is_popular']);
+    $sortOrder = array_key_exists('sort_order', $input) ? (int) $input['sort_order'] : 100;
+    $icon = trim((string) ($input['icon'] ?? $code));
     $limits = is_array($input['limits'] ?? null) ? $input['limits'] : [];
     $modules = is_array($input['modules'] ?? null) ? $input['modules'] : [];
+    $features = plan_features_clean($input['features'] ?? []);
     $errors = [];
     if (!preg_match('/^[a-z][a-z0-9_]{1,39}$/', $code)) {
         $errors['code'] = 'invalid_plan_code';
@@ -270,11 +409,20 @@ function plan_create(array $input): array
     if (!is_int($annual) || $annual < 0) {
         $errors['price_annual_kobo'] = 'invalid_price';
     }
+    if ($currency !== 'NGN') {
+        $errors['currency'] = 'invalid_plan_currency';
+    }
     if ($trialAvailable && $trialDays < 1) {
         $errors['trial_days'] = 'invalid_trial_days';
     }
     if (!$trialAvailable) {
         $trialDays = 0;
+    }
+    if ($sortOrder < 0 || $sortOrder > 9999) {
+        $errors['sort_order'] = 'invalid_sort_order';
+    }
+    if (strlen($icon) > 40 || ($icon !== '' && !preg_match('/^[a-z0-9_-]+$/', $icon))) {
+        $errors['icon'] = 'invalid_plan_icon';
     }
     $cleanLimits = [];
     foreach (subscription_limit_keys() as $key) {
@@ -309,13 +457,23 @@ function plan_create(array $input): array
     $id = uuid();
     $now = app_now()->format('Y-m-d H:i:s');
     $platformTenant = subscription_platform_tenant_id();
+    if ($isPopular) {
+        subscription_platform_execute(
+            'UPDATE fashion_plans SET is_popular = 0, updated_at = :updated_at WHERE tenant_id = :tenant_id',
+            ['tenant_id' => $platformTenant, 'updated_at' => $now]
+        );
+    }
     subscription_platform_execute(
         'INSERT INTO fashion_plans (
-            id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo,
-            trial_available, trial_days, active, limits_json, modules_json, created_at, updated_at
+            id, tenant_id, code, name, description, price_monthly_kobo, price_annual_kobo, currency,
+            trial_available, trial_days, active, limits_json, modules_json, features_json,
+            is_popular, sort_order, icon, price_version, paystack_plan_code_monthly, paystack_plan_code_annual,
+            created_at, updated_at
          ) VALUES (
-            :id, :tenant_id, :code, :name, :description, :price_monthly_kobo, :price_annual_kobo,
-            :trial_available, :trial_days, :active, :limits_json, :modules_json, :created_at, :updated_at
+            :id, :tenant_id, :code, :name, :description, :price_monthly_kobo, :price_annual_kobo, :currency,
+            :trial_available, :trial_days, :active, :limits_json, :modules_json, :features_json,
+            :is_popular, :sort_order, :icon, 1, \'\', \'\',
+            :created_at, :updated_at
          )',
         [
             'id' => $id,
@@ -325,6 +483,11 @@ function plan_create(array $input): array
             'description' => $description,
             'price_monthly_kobo' => $monthly,
             'price_annual_kobo' => $annual,
+            'currency' => $currency,
+            'features_json' => json_encode($features, JSON_THROW_ON_ERROR),
+            'is_popular' => $isPopular ? 1 : 0,
+            'sort_order' => $sortOrder,
+            'icon' => $icon,
             'trial_available' => $trialAvailable ? 1 : 0,
             'trial_days' => $trialDays,
             'active' => $active ? 1 : 0,
@@ -357,10 +520,96 @@ function subscription_present(array $row): array
         'expires_on' => $row['expires_on'] !== null ? (string) $row['expires_on'] : null,
         'cancelled_at' => $row['cancelled_at'] !== null ? (string) $row['cancelled_at'] : null,
         'suspended_at' => $row['suspended_at'] !== null ? (string) $row['suspended_at'] : null,
+        'paystack_customer_code' => isset($row['paystack_customer_code']) && $row['paystack_customer_code'] !== null
+            ? (string) $row['paystack_customer_code'] : null,
+        'paystack_subscription_code' => isset($row['paystack_subscription_code']) && $row['paystack_subscription_code'] !== null
+            ? (string) $row['paystack_subscription_code'] : null,
+        'cancel_at_period_end' => (int) ($row['cancel_at_period_end'] ?? 0) === 1,
         'created_at' => (string) $row['created_at'],
         'updated_at' => (string) $row['updated_at'],
     ];
 }
+
+function subscription_payment_present(array $row): array
+{
+    return [
+        'id' => (string) $row['id'],
+        'tenant_id' => (string) ($row['tenant_id'] ?? ''),
+        'subscription_id' => (string) $row['subscription_id'],
+        'amount_kobo' => (int) $row['amount_kobo'],
+        'currency' => (string) ($row['currency'] ?? 'NGN'),
+        'provider' => (string) $row['provider'],
+        'provider_reference' => $row['provider_reference'] !== null ? (string) $row['provider_reference'] : null,
+        'status' => (string) $row['status'],
+        'paid_at' => $row['paid_at'] !== null ? (string) $row['paid_at'] : null,
+        'created_at' => (string) $row['created_at'],
+        'business_name' => isset($row['business_name']) ? (string) $row['business_name'] : null,
+    ];
+}
+
+/** @return list<array> */
+function subscription_payments_for_tenant(int $limit = 40): array
+{
+    require_login();
+    $limit = max(1, min(100, $limit));
+    $rows = db_query(
+        'SELECT p.id, p.tenant_id, p.subscription_id, p.amount_kobo, p.currency, p.provider, p.provider_reference,
+                p.status, p.paid_at, p.created_at,
+                pl.name AS plan_name
+         FROM fashion_subscription_payments p
+         LEFT JOIN fashion_subscription_checkouts c
+            ON c.tenant_id = p.tenant_id
+           AND c.provider = p.provider
+           AND c.provider_reference = p.provider_reference
+         LEFT JOIN fashion_plans pl
+            ON pl.id = c.plan_id
+         WHERE p.tenant_id = :tenant_id
+         ORDER BY p.seq DESC
+         LIMIT ' . $limit,
+        []
+    );
+    $out = [];
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $payment = subscription_payment_present($row);
+        $payment['plan_name'] = isset($row['plan_name']) && is_string($row['plan_name']) && $row['plan_name'] !== ''
+            ? (string) $row['plan_name']
+            : null;
+        $out[] = $payment;
+    }
+    return $out;
+}
+
+function subscription_bind_paystack_codes(?string $customerCode, ?string $subscriptionCode): void
+{
+    $current = subscription_current();
+    if ($current === null) {
+        return;
+    }
+    $data = [];
+    if ($customerCode !== null && $customerCode !== '') {
+        $data['paystack_customer_code'] = substr($customerCode, 0, 80);
+    }
+    if ($subscriptionCode !== null && $subscriptionCode !== '') {
+        $data['paystack_subscription_code'] = substr($subscriptionCode, 0, 80);
+    }
+    if ($data === []) {
+        return;
+    }
+    subscription_write($data, ['id' => $current['id']]);
+}
+
+function subscription_mark_cancel_at_period_end(bool $value): void
+{
+    $current = subscription_current();
+    if ($current === null) {
+        return;
+    }
+    subscription_write(['cancel_at_period_end' => $value ? 1 : 0], ['id' => $current['id']]);
+}
+
 
 function subscription_current(): ?array
 {
@@ -370,6 +619,18 @@ function subscription_current(): ?array
     $rows = db_select('fashion_subscriptions', [], ['limit' => 1]);
     $row = $rows[0] ?? null;
     return is_array($row) ? subscription_present($row) : null;
+}
+
+/** Upgrade CTAs stay visible on Starter/trial; hide for Professional/Enterprise. */
+function subscription_show_upgrade_cta(): bool
+{
+    $sub = subscription_current();
+    if ($sub === null) {
+        return true;
+    }
+    $plan = plan_get((string) $sub['plan_id']);
+    $code = strtolower((string) ($plan['code'] ?? subscription_default_plan_code()));
+    return !in_array($code, ['professional', 'enterprise'], true);
 }
 
 function subscription_require(): array

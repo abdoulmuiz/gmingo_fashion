@@ -1,8 +1,10 @@
 <?php
 $used = (int) $garment['measurement_count'] > 0;
 $removeConfirm = t($used ? 'garment_archive_confirm' : 'garment_delete_confirm');
+require __DIR__ . '/partials/settings_nav.php';
 ?>
-<section class="card field-editor" data-field-editor data-saved="<?= e(t('saved')) ?>">
+<div class="settings-layout">
+<section class="card field-editor settings-panel" data-field-editor data-saved="<?= e(t('saved')) ?>">
     <p class="meta"><a href="<?= e(url('/settings/garments')) ?>"><?= e(t('garment_settings')) ?></a></p>
     <div class="editor-top">
         <h1><?= e((string) $garment['name']) ?></h1>
@@ -136,3 +138,4 @@ $removeConfirm = t($used ? 'garment_archive_confirm' : 'garment_delete_confirm')
     </template>
     <script src="<?= e(url('/assets/fields.js')) ?>"></script>
 </section>
+</div>

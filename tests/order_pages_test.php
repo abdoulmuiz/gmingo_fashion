@@ -179,38 +179,51 @@ foreach ($dash['cards'] as $card) {
 }
 
 $seen = [];
+$previousCreated = '';
 $previousNumber = '';
-$previousDue = '';
-for ($page = 1; $page <= 16; $page++) {
+$pageSize = order_list_page_size();
+check_eq($pageSize, 20, 'orders list uses 20 rows per page');
+$totalAllPages = (int) ceil(400 / $pageSize);
+for ($page = 1; $page <= $totalAllPages; $page++) {
     $orders = order_list('all', '', $page);
-    check_eq(count($orders), 25, 'page ' . (string) $page . ' of all orders has 25 rows');
+    $expectedCount = $page < $totalAllPages ? $pageSize : (400 % $pageSize === 0 ? $pageSize : 400 % $pageSize);
+    check_eq(count($orders), $expectedCount, 'page ' . (string) $page . ' of all orders has the expected rows');
     foreach ($orders as $order) {
         check(!isset($seen[$order['order_number']]), 'pages do not repeat ' . $order['order_number']);
         $seen[$order['order_number']] = true;
-        if ($previousDue !== '') {
-            $inOrder = $order['due_date'] > $previousDue
-                || ($order['due_date'] === $previousDue && $order['order_number'] > $previousNumber);
-            check($inOrder, 'pages stay in due date order');
+        if ($previousCreated !== '') {
+            $inOrder = $order['created_at'] < $previousCreated
+                || ($order['created_at'] === $previousCreated && $order['order_number'] <= $previousNumber);
+            check($inOrder, 'pages stay in newest-first order');
         }
-        $previousDue = $order['due_date'];
+        $previousCreated = $order['created_at'];
         $previousNumber = $order['order_number'];
     }
 }
 check_eq(count($seen), 400, 'the pages together list every order');
-check(order_list('all', '', 17) === [], 'a page past the end is empty');
+check(order_list('all', '', $totalAllPages + 1) === [], 'a page past the end is empty');
+
+$dueSorted = order_list('all', '', 1, ['sort' => 'due']);
+$previousDue = '';
+$previousNumber = '';
+foreach ($dueSorted as $order) {
+    if ($previousDue !== '') {
+        $inOrder = $order['due_date'] > $previousDue
+            || ($order['due_date'] === $previousDue && $order['order_number'] >= $previousNumber);
+        check($inOrder, 'due sort stays in due date order');
+    }
+    $previousDue = $order['due_date'];
+    $previousNumber = $order['order_number'];
+}
 
 $activeSeen = [];
-for ($page = 1; $page <= 9; $page++) {
+$activeTotal = 230;
+$activePages = (int) ceil($activeTotal / $pageSize);
+for ($page = 1; $page <= $activePages; $page++) {
     $orders = order_list('active', 'Paging', $page);
-    check_eq(count($orders), 25, 'filtered page ' . (string) $page . ' has 25 rows');
     foreach ($orders as $order) {
         $activeSeen[$order['order_number']] = true;
     }
-}
-$lastActive = order_list('active', 'Paging', 10);
-check_eq(count($lastActive), 5, 'the last filtered page keeps the leftover rows');
-foreach ($lastActive as $order) {
-    $activeSeen[$order['order_number']] = true;
 }
 check_eq(count($activeSeen), 230, 'search and the active filter stay in force on every page');
 
@@ -223,7 +236,7 @@ orders_index();
 $listPage = (string) ob_get_clean();
 check(str_contains($listPage, 'href="' . e(url('/orders?tab=active&q=Paging')) . '"'), 'previous keeps the filter and search');
 check(str_contains($listPage, 'href="' . e(url('/orders?tab=active&q=Paging&page=3')) . '"'), 'next keeps the filter and search');
-check_eq(substr_count($listPage, 'class="card link-card"'), 25, 'the order page shows 25 orders');
+check_eq(substr_count($listPage, 'class="orders-row"'), $pageSize, 'the order page shows one page of orders');
 
 $_GET = ['page' => '2'];
 $_SERVER['REQUEST_URI'] = base_path() . '/outstanding?page=2';

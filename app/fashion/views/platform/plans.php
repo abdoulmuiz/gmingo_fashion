@@ -17,7 +17,9 @@
             <a class="line" href="<?= e(url('/platform/plans/' . $plan['id'])) ?>">
                 <strong><?= e((string) $plan['name']) ?></strong>
                 <span><?= e((string) $plan['code']) ?></span>
+                <span><?= e(money((int) $plan['price_monthly_kobo'])) ?> / <?= e(t('platform_interval_monthly')) ?></span>
                 <span><?= e($plan['active'] ? t('platform_plan_active') : t('platform_plan_inactive')) ?></span>
+                <?php if (!empty($plan['is_popular'])): ?><span class="tag"><?= e(t('pricing_most_popular')) ?></span><?php endif; ?>
             </a>
         <?php endforeach; ?>
     <?php endif; ?>
@@ -46,6 +48,22 @@
         </label>
         <label><?= e(t('platform_price_annual')) ?>
             <input name="price_annual_kobo" inputmode="numeric" value="<?= e((string) ($old['price_annual_kobo'] ?? '')) ?>" required>
+        </label>
+        <label><?= e(t('platform_plan_currency')) ?>
+            <input name="currency" value="<?= e((string) ($old['currency'] ?? 'NGN')) ?>" maxlength="3">
+        </label>
+        <label><?= e(t('platform_plan_features')) ?>
+            <textarea name="features" rows="5" placeholder="<?= e(t('platform_plan_features_help')) ?>"><?= e((string) ($old['features'] ?? '')) ?></textarea>
+        </label>
+        <label><?= e(t('platform_plan_sort_order')) ?>
+            <input name="sort_order" inputmode="numeric" value="<?= e((string) ($old['sort_order'] ?? '100')) ?>">
+        </label>
+        <label><?= e(t('platform_plan_icon')) ?>
+            <input name="icon" value="<?= e((string) ($old['icon'] ?? '')) ?>">
+        </label>
+        <label class="check">
+            <input type="checkbox" name="is_popular" value="1" <?= !empty($old['is_popular']) ? 'checked' : '' ?>>
+            <?= e(t('platform_plan_most_popular')) ?>
         </label>
         <label class="check">
             <input type="checkbox" name="trial_available" value="1" <?= !empty($old['trial_available']) ? 'checked' : '' ?>>

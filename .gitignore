@@ -1,6 +1,7 @@
 /config/config.php
 /node_modules/
 .cursor/
+.tmp-mysql/
 /storage/sessions/*
 !/storage/sessions/.gitkeep
 /storage/ratelimit/*

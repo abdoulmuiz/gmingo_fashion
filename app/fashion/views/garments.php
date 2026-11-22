@@ -1,3 +1,5 @@
+<?php require __DIR__ . '/partials/settings_nav.php'; ?>
+<div class="settings-layout">
 <section class="card">
     <h1><?= e(t('garment_settings')) ?></h1>
     <div class="garment-cards">
@@ -44,3 +46,4 @@
         <button class="btn" type="submit"><?= e(t('add_garment')) ?></button>
     </form>
 </section>
+</div>

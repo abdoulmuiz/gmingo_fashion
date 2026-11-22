@@ -156,7 +156,7 @@ $boardHtml = (string) ob_get_clean();
 check(str_contains($boardHtml, $order['order_number']), 'the board page shows the order number');
 check(str_contains($boardHtml, 'Amina Bello'), 'the board page shows the customer');
 check(!str_contains($boardHtml, t('unassigned')), 'an order with nobody assigned does not say Unassigned');
-check(!str_contains($boardHtml, '<p class="meta">Amina Bello</p>'), 'an order with nobody assigned omits the name');
+check(!str_contains($boardHtml, 'board-assignee'), 'an order with nobody assigned omits the assignee chip');
 
 db_update('fashion_orders', ['assigned_user_id' => (string) $shop['user_id']], ['id' => $order['id']]);
 $assignedBoard = stage_board();
@@ -173,7 +173,8 @@ check(
 ob_start();
 board_show();
 $assignedHtml = (string) ob_get_clean();
-check(str_contains($assignedHtml, '<p class="meta">Amina Bello</p>'), 'the board page shows the assigned name');
+check(str_contains($assignedHtml, 'board-assignee'), 'the board page shows the assigned initials chip');
+check(str_contains($assignedHtml, 'title="Amina Bello"'), 'the board page keeps the assigned full name');
 check(!str_contains($assignedHtml, t('unassigned')), 'an assigned order does not say Unassigned');
 
 $newStage = db_select('fashion_stage_definitions', ['code' => 'new'])[0];

@@ -6,7 +6,7 @@
 | --- | --- |
 | Completed phases | 1–17 (Phase 16 Tailwind build done; UI migration partial) |
 | Current phase | 18 — final integration / release readiness |
-| Current milestone | Visual redesign shipped in working tree; release commit still awaiting approval |
+| Current milestone | Dynamic subscription pricing shipped in working tree (DB-driven `/pricing` + platform plan editor); release commit still awaiting approval |
 | Branch | `feature/phase-2-saas-foundation` |
 
 ## Pending

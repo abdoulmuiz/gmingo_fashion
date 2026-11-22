@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Dynamic subscription pricing (2026-11-21)
+
+- Migration `032_dynamic_pricing.sql`: plan features, popular flag, sort order, currency, price_version; rename growth/business → professional/enterprise.
+- Public `/pricing` page renders active plans from the database (monthly/annual toggle).
+- Platform plan editor can change prices/features with confirmation; price bumps clear stale Paystack recurring codes unless re-entered.
+- Checkout still charges authoritative DB amounts only.
+
+### SaaS Paystack gateway + billing UX (2026-11-21)
+
+- Migration `031_saas_gateway.sql`: encrypted platform gateway settings, webhook receipts, optional Paystack plan codes, subscription Paystack codes.
+- `/platform/gateway` configure/test/mask secrets; `/platform/payments` filter SaaS payments.
+- Owner `/account/subscription` shows plan prices, total due, payment history; recurring plan codes optional.
+- Webhook handles `charge.success` plus subscription/invoice lifecycle events with idempotent receipts.
+- Docs: `docs/BILLING.md`.
+
 ### Visual redesign — professional Gmingo chrome (2026-11-21)
 
 - Rebuilt `public/assets/app.css` tokens, atmosphere, header/footer, forms, nav, cards, and motion.

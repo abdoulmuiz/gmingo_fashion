@@ -5,7 +5,11 @@
 <section class="card">
     <h1><?= e(t('platform_password_change')) ?></h1>
     <?php if ($must_change): ?>
-        <p class="flash flash-error" role="alert"><?= e(t('platform_password_must_change')) ?></p>
+        <?php
+        $page_toasts = is_array($page_toasts ?? null) ? $page_toasts : [];
+        $page_toasts[] = ['type' => 'warning', 'message' => t('platform_password_must_change')];
+        ?>
+        <p class="meta"><?= e(t('platform_password_must_change')) ?></p>
     <?php endif; ?>
     <form method="post" action="<?= e(url('/platform/password')) ?>" class="stack">
         <?= csrf_field() ?>

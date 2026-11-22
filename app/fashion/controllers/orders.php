@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/domain/access.php';
 require_once dirname(__DIR__, 2) . '/domain/orders.php';
 require_once dirname(__DIR__, 2) . '/domain/messages.php';
 require_once dirname(__DIR__, 2) . '/domain/fittings.php';
@@ -22,18 +23,45 @@ function orders_index(): void
         $filter = 'all';
     }
     $query = trim((string) ($_GET['q'] ?? ''));
+    $sort = order_normalize_sort((string) ($_GET['sort'] ?? 'newest'));
+    $from = order_parse_date(isset($_GET['from']) ? (string) $_GET['from'] : null);
+    $to = order_parse_date(isset($_GET['to']) ? (string) $_GET['to'] : null);
+    $options = ['sort' => $sort, 'from' => $from, 'to' => $to];
     $page = list_page($_GET['page'] ?? '1');
-    $total = order_count($filter, $query);
+    $pageSize = order_list_page_size();
+    $total = order_count($filter, $query, $options);
+    $totalPages = max(1, (int) ceil($total / $pageSize));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    $fromRow = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
+    $toRow = min($total, $page * $pageSize);
     render('orders/index', [
         'title' => t('orders'),
         'filter' => $filter,
         'query' => $query,
-        'orders' => order_list($filter, $query, $page),
+        'sort' => $sort,
+        'date_from' => $from ?? '',
+        'date_to' => $to ?? '',
+        'orders' => order_list($filter, $query, $page, $options),
+        'summary' => order_summary_stats(),
+        'tab_counts' => order_tab_counts($query, $options),
         'page' => $page,
+        'page_size' => $pageSize,
+        'total' => $total,
+        'total_pages' => $totalPages,
+        'from_row' => $fromRow,
+        'to_row' => $toRow,
         'has_previous' => $page > 1,
-        'has_next' => $page * list_page_size() < $total,
-        'previous_path' => order_page_path($filter, $query, $page - 1),
-        'next_path' => order_page_path($filter, $query, $page + 1),
+        'has_next' => $page * $pageSize < $total,
+        'previous_path' => order_page_path($filter, $query, $page - 1, $options),
+        'next_path' => order_page_path($filter, $query, $page + 1, $options),
+        'page_path' => static function (int $p) use ($filter, $query, $options): string {
+            return order_page_path($filter, $query, $p, $options);
+        },
+        'can_calendar' => can_access('/calendar'),
+        'can_finance' => module_enabled('fashion.finance'),
+        'has_active_filters' => $filter !== 'all' || $query !== '' || $from !== null || $to !== null || $sort !== 'newest',
     ]);
 }
 
@@ -125,10 +153,35 @@ function orders_show(string $id): void
     if ($nextStage !== null) {
         $depositBlock = deposit_move_block($id, (string) $nextStage['id']);
     }
+    $stageSteps = [];
+    if (module_enabled('fashion.production')) {
+        $latest = stage_latest($id);
+        $currentId = $latest !== null ? (string) $latest['id'] : null;
+        $currentSort = $latest !== null ? (int) $latest['sort_order'] : null;
+        $currentRole = $latest !== null ? (string) ($latest['role'] ?? '') : '';
+        $finished = $currentRole === 'finished' || ($currentId !== null && $nextStage === null);
+        foreach (stage_active() as $stage) {
+            $sort = (int) $stage['sort_order'];
+            $state = 'todo';
+            if ($currentId !== null && (string) $stage['id'] === $currentId) {
+                $state = $finished ? 'done' : 'current';
+            } elseif ($currentSort !== null && $sort < $currentSort) {
+                $state = 'done';
+            }
+            $stageSteps[] = [
+                'id' => (string) $stage['id'],
+                'name' => (string) $stage['name'],
+                'code' => (string) ($stage['code'] ?? ''),
+                'role' => (string) ($stage['role'] ?? ''),
+                'state' => $state,
+            ];
+        }
+    }
     render('orders/show', [
         'title' => $order['order_number'],
         'order' => $order,
         'next_stage' => $nextStage,
+        'stage_steps' => $stageSteps,
         'deposit' => deposit_status($id),
         'deposit_block' => $depositBlock,
         'is_owner' => deposit_is_owner(),

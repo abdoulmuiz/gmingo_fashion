@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/domain/platform.php';
 require_once dirname(__DIR__, 2) . '/domain/modules.php';
+require_once dirname(__DIR__, 2) . '/domain/saas_gateway.php';
+require_once dirname(__DIR__, 2) . '/domain/billing.php';
 
 function platform_money_input(string $raw): int|false
 {
@@ -12,6 +14,20 @@ function platform_money_input(string $raw): int|false
         return false;
     }
     return (int) $raw;
+}
+
+/** @return list<string> */
+function platform_features_input(string $raw): array
+{
+    $lines = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+    $out = [];
+    foreach ($lines as $line) {
+        $line = trim((string) $line);
+        if ($line !== '') {
+            $out[] = $line;
+        }
+    }
+    return $out;
 }
 
 function platform_limit_inputs(array $input): array
@@ -92,9 +108,14 @@ function platform_plans_create(): void
         'description' => (string) ($_POST['description'] ?? ''),
         'price_monthly_kobo' => $monthly === false ? -1 : $monthly,
         'price_annual_kobo' => $annual === false ? -1 : $annual,
+        'currency' => (string) ($_POST['currency'] ?? 'NGN'),
         'trial_available' => !empty($_POST['trial_available']),
         'trial_days' => (int) ($_POST['trial_days'] ?? 0),
         'active' => !empty($_POST['active']),
+        'is_popular' => !empty($_POST['is_popular']),
+        'sort_order' => (int) ($_POST['sort_order'] ?? 100),
+        'icon' => (string) ($_POST['icon'] ?? ''),
+        'features' => platform_features_input((string) ($_POST['features'] ?? '')),
         'limits' => platform_limit_inputs($_POST['limits'] ?? []),
         'modules' => array_values(array_filter(
             is_array($_POST['modules'] ?? null) ? $_POST['modules'] : [],
@@ -144,14 +165,22 @@ function platform_plan_edit_submit(string $planId): void
         'description' => (string) ($_POST['description'] ?? ''),
         'price_monthly_kobo' => $monthly === false ? -1 : $monthly,
         'price_annual_kobo' => $annual === false ? -1 : $annual,
+        'currency' => (string) ($_POST['currency'] ?? 'NGN'),
         'trial_available' => !empty($_POST['trial_available']),
         'trial_days' => (int) ($_POST['trial_days'] ?? 0),
         'active' => !empty($_POST['active']),
+        'is_popular' => !empty($_POST['is_popular']),
+        'sort_order' => (int) ($_POST['sort_order'] ?? 100),
+        'icon' => (string) ($_POST['icon'] ?? ''),
+        'features' => platform_features_input((string) ($_POST['features'] ?? '')),
+        'confirm_price_change' => !empty($_POST['confirm_price_change']),
         'limits' => platform_limit_inputs($_POST['limits'] ?? []),
         'modules' => array_values(array_filter(
             is_array($_POST['modules'] ?? null) ? $_POST['modules'] : [],
             static fn ($m): bool => is_string($m)
         )),
+        'paystack_plan_code_monthly' => (string) ($_POST['paystack_plan_code_monthly'] ?? ''),
+        'paystack_plan_code_annual' => (string) ($_POST['paystack_plan_code_annual'] ?? ''),
     ]);
     if (isset($result['errors'])) {
         platform_plan_edit_show($planId, $result['errors'], $_POST);
@@ -230,4 +259,61 @@ function platform_tenant_action(string $tenantId): void
         return;
     }
     redirect('/platform/tenants/' . $tenantId);
+}
+
+function platform_gateway_show(array $errors = []): void
+{
+    require_platform_admin();
+    render('platform/gateway', [
+        'title' => t('platform_gateway'),
+        'gateway' => saas_gateway_view(),
+        'errors' => $errors,
+    ]);
+}
+
+function platform_gateway_submit(): void
+{
+    require_platform_admin();
+    csrf_check();
+    $action = (string) ($_POST['action'] ?? 'save');
+    if ($action === 'test') {
+        $result = saas_gateway_test_connection();
+        if (($result['ok'] ?? false) === true) {
+            flash_set('success', t('platform_gateway_test_ok'));
+        } else {
+            flash_set('error', t((string) ($result['error'] ?? 'saas_gateway_test_failed')));
+        }
+        redirect('/platform/gateway');
+    }
+    $result = saas_gateway_save([
+        'enabled' => !empty($_POST['enabled']),
+        'environment' => (string) ($_POST['environment'] ?? 'test'),
+        'public_key' => (string) ($_POST['public_key'] ?? ''),
+        'secret_key' => (string) ($_POST['secret_key'] ?? ''),
+        'webhook_secret' => (string) ($_POST['webhook_secret'] ?? ''),
+    ]);
+    if (isset($result['errors'])) {
+        platform_gateway_show($result['errors']);
+        return;
+    }
+    flash_set('success', t('platform_gateway_saved'));
+    redirect('/platform/gateway');
+}
+
+function platform_payments_index(): void
+{
+    require_platform_admin();
+    $filters = [
+        'status' => (string) ($_GET['status'] ?? ''),
+        'provider' => (string) ($_GET['provider'] ?? ''),
+        'tenant_id' => (string) ($_GET['tenant_id'] ?? ''),
+        'from' => (string) ($_GET['from'] ?? ''),
+        'to' => (string) ($_GET['to'] ?? ''),
+    ];
+    render('platform/payments', [
+        'title' => t('platform_payments'),
+        'payments' => billing_platform_payments($filters),
+        'filters' => $filters,
+        'tenants' => platform_list_tenants(),
+    ]);
 }

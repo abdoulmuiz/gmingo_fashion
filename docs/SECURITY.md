@@ -31,9 +31,10 @@ Checklist for running Gmingo Fashion safely.
 
 1. Point `config/config.php` at production MySQL with a non-`_test` database name.
 2. Set a strong `platform_admin_password` and unique `platform_admin_email` before seeding.
-3. Set strong `saas_paystack_*` keys only on the platform host; leave empty to force manual renew.
-4. Confirm `base_path` has no host or port.
-5. Ensure `storage/` is writable by the web user and not web-browsable for sessions/logs beyond need.
-6. Deploy compiled `public/assets/tailwind.css` with the release (Node not required on the server).
-7. Run `php tools/migrate.php` then `php tests/run.php` against `*_test` only.
-8. Seed only demo data on non-production hosts.
+3. Configure SaaS Paystack on `/platform/gateway` (encrypted DB secrets) or set `saas_paystack_*` in config; leave disabled for manual renew. See `docs/BILLING.md`.
+4. Set `public_base_url` to the production HTTPS origin and register the Paystack webhook URL.
+5. Confirm `base_path` has no host or port.
+6. Ensure `storage/` is writable by the web user and not web-browsable for sessions/logs beyond need.
+7. Deploy compiled `public/assets/tailwind.css` with the release (Node not required on the server).
+8. Run `php tools/migrate.php` then `php tests/run.php` against `*_test` only.
+9. Seed only demo data on non-production hosts.

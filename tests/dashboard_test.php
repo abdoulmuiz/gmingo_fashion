@@ -131,16 +131,44 @@ check(!in_array($ready['order_number'], $attention, true), 'a ready order due to
 check(!in_array($delivered['order_number'], $attention, true), 'a delivered order is not overdue');
 check(!in_array($openToday['order_number'], $attention, true), 'an open order due today is not in the urgent list');
 
+check_eq($dash['range']['preset'], 'last_30', 'dashboard defaults to last 30 days');
+check_eq((int) $dash['revenue']['period_total_kobo'], 40000, 'revenue KPI uses money collected in the range');
+$kpiOrders = null;
+$kpiRevenue = null;
+foreach ($dash['kpis'] as $kpi) {
+    if ($kpi['key'] === 'dash_kpi_orders') {
+        $kpiOrders = $kpi['value'];
+    }
+    if ($kpi['key'] === 'dash_kpi_revenue') {
+        $kpiRevenue = $kpi['value'];
+    }
+}
+check_eq($kpiOrders, '6', 'total orders KPI counts orders created in the selected range');
+check_eq($kpiRevenue, money(40000), 'total revenue KPI shows collected money for the range');
+$_GET = ['range' => 'today'];
+$todayDash = dashboard_home(17);
+check_eq($todayDash['range']['preset'], 'today', 'today preset is stored from the query string');
+check_eq($_SESSION['gmingo_dashboard_range']['preset'] ?? '', 'today', 'the chosen range is saved in the session');
+$_GET = [];
+$fromSession = dashboard_home(17);
+check_eq($fromSession['range']['preset'], 'today', 'the session range is restored on the next load');
+$_GET = ['range' => 'last_30'];
+dashboard_home(17);
+$_GET = [];
+
 $_SERVER['REQUEST_URI'] = base_path() . '/';
 ob_start();
 home_show();
 $html = (string) ob_get_clean();
 check(str_contains($html, t('home_title')), 'the home screen keeps its title');
 check(str_contains($html, dashboard_greeting()), 'the home screen shows the greeting');
+check(str_contains($html, 'fashion business today'), 'the home screen shows the welcome subtitle');
 check(str_contains($html, t('card_active')), 'the home screen shows active orders');
 check(str_contains($html, money(660000)), 'the home screen shows outstanding money');
 check(str_contains($html, $urgent['order_number']), 'the home screen lists the urgent order');
 check(str_contains($html, 'Hauwa Sani'), 'the home screen lists the customer');
+check(str_contains($html, 'dash-chart'), 'the home screen draws the revenue chart');
+check(str_contains($html, t('dash_revenue_overview')), 'the home screen shows the revenue overview');
 check(!str_contains($html, t('card_low_stock')), 'the home screen has no low stock card when inventory is off');
 check(!str_contains($html, t('inventory_later')), 'the low stock note stays off the page');
 check(!str_contains($html, t('switch_on_module')), 'the empty message stays off while cards are showing');

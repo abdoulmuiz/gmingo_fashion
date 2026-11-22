@@ -18,8 +18,15 @@ document.querySelectorAll('[data-copy-message]').forEach(function (button) {
         }
         box.focus();
         box.select();
+        var done = function () {
+            if (window.toast) {
+                window.toast.success(<?= json_encode(t('copied'), JSON_UNESCAPED_UNICODE) ?>);
+            }
+        };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(box.value);
+            navigator.clipboard.writeText(box.value).then(done).catch(done);
+        } else {
+            done();
         }
     });
 });

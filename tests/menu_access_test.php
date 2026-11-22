@@ -12,6 +12,8 @@ if (!is_string($connected) || !str_ends_with($connected, '_test')) {
 }
 
 tests_reset();
+// Keep wall-clock / prior suite gmingo_now from expiring the fresh trial mid-run.
+$GLOBALS['gmingo_now'] = '2026-11-22 12:00:00';
 
 $shop = business_register([
     'business_name' => 'Menu Access',

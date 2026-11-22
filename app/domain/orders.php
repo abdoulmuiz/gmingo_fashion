@@ -144,6 +144,12 @@ function list_page_size(): int
     return 25;
 }
 
+/** Orders list page size (Home-style redesign). */
+function order_list_page_size(): int
+{
+    return 20;
+}
+
 function list_page(mixed $page): int
 {
     if (is_int($page)) {
@@ -155,22 +161,68 @@ function list_page(mixed $page): int
     return 1;
 }
 
-function order_list(string $filter, string $search, int $page = 1): array
+/** @return list<string> */
+function order_sorts(): array
 {
-    require_module('fashion.orders');
-    if (!in_array($filter, order_tabs(), true)) {
-        $filter = 'all';
-    }
-    return order_rows($filter, trim($search), null, list_page($page));
+    return ['newest', 'oldest', 'due', 'amount'];
 }
 
-function order_count(string $filter, string $search): int
+function order_normalize_sort(string $sort): string
+{
+    return in_array($sort, order_sorts(), true) ? $sort : 'newest';
+}
+
+function order_sort_sql(string $sort): string
+{
+    $sort = order_normalize_sort($sort);
+    if ($sort === 'oldest') {
+        return ' ORDER BY o.created_at ASC, o.order_number ASC';
+    }
+    if ($sort === 'due') {
+        return ' ORDER BY o.due_date ASC, o.order_number ASC';
+    }
+    if ($sort === 'amount') {
+        [$totalSql] = order_money_sql();
+        return ' ORDER BY ' . $totalSql . ' DESC, o.order_number ASC';
+    }
+    return ' ORDER BY o.created_at DESC, o.order_number DESC';
+}
+
+function order_parse_date(?string $value): ?string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return null;
+    }
+    $parsed = DateTime::createFromFormat('!Y-m-d', $value);
+    if ($parsed === false || $parsed->format('Y-m-d') !== $value) {
+        return null;
+    }
+    return $value;
+}
+
+/**
+ * @param array{from?:?string,to?:?string,sort?:string} $options
+ */
+function order_list(string $filter, string $search, int $page = 1, array $options = []): array
 {
     require_module('fashion.orders');
     if (!in_array($filter, order_tabs(), true)) {
         $filter = 'all';
     }
-    [$where, $params] = order_conditions($filter, trim($search));
+    return order_rows($filter, trim($search), null, list_page($page), $options);
+}
+
+/**
+ * @param array{from?:?string,to?:?string} $options
+ */
+function order_count(string $filter, string $search, array $options = []): int
+{
+    require_module('fashion.orders');
+    if (!in_array($filter, order_tabs(), true)) {
+        $filter = 'all';
+    }
+    [$where, $params] = order_conditions($filter, trim($search), $options);
     $rows = db_query(
         'SELECT COUNT(*) AS total
          FROM fashion_orders o
@@ -181,7 +233,10 @@ function order_count(string $filter, string $search): int
     return (int) ($rows[0]['total'] ?? 0);
 }
 
-function order_page_path(string $filter, string $search, int $page): string
+/**
+ * @param array{from?:?string,to?:?string,sort?:string} $options
+ */
+function order_page_path(string $filter, string $search, int $page, array $options = []): string
 {
     if (!in_array($filter, order_tabs(), true)) {
         $filter = 'all';
@@ -191,10 +246,69 @@ function order_page_path(string $filter, string $search, int $page): string
     if ($search !== '') {
         $path .= '&q=' . rawurlencode($search);
     }
+    $sort = order_normalize_sort((string) ($options['sort'] ?? 'newest'));
+    if ($sort !== 'newest') {
+        $path .= '&sort=' . rawurlencode($sort);
+    }
+    $from = order_parse_date(isset($options['from']) ? (string) $options['from'] : null);
+    $to = order_parse_date(isset($options['to']) ? (string) $options['to'] : null);
+    if ($from !== null) {
+        $path .= '&from=' . rawurlencode($from);
+    }
+    if ($to !== null) {
+        $path .= '&to=' . rawurlencode($to);
+    }
     if ($page > 1) {
         $path .= '&page=' . (string) $page;
     }
     return $path;
+}
+
+/**
+ * Tab chip counts for the current search/date range (not the active tab alone).
+ *
+ * @param array{from?:?string,to?:?string} $options
+ * @return array<string,int>
+ */
+function order_tab_counts(string $search, array $options = []): array
+{
+    require_module('fashion.orders');
+    $counts = [];
+    foreach (order_tabs() as $tab) {
+        $counts[$tab] = order_count($tab, $search, $options);
+    }
+    return $counts;
+}
+
+/**
+ * Summary cards for the orders index (shop-scoped).
+ *
+ * @return array{total:int,overdue:int,due_today:int,unpaid_balance_kobo:int}
+ */
+function order_summary_stats(): array
+{
+    require_module('fashion.orders');
+    $today = app_today();
+    $stageRole = order_stage_sql('role');
+    [$totalSql, $paidSql] = order_money_sql();
+    $unfinished = '(' . $stageRole . ' IS NULL OR ' . $stageRole . ' <> \'finished\')';
+    $rows = db_query(
+        'SELECT
+            COUNT(*) AS total_count,
+            COALESCE(SUM(CASE WHEN o.due_date < :today_overdue AND ' . $unfinished . ' THEN 1 ELSE 0 END), 0) AS overdue_count,
+            COALESCE(SUM(CASE WHEN o.due_date = :today_due THEN 1 ELSE 0 END), 0) AS due_today_count,
+            COALESCE(SUM(CASE WHEN ' . $totalSql . ' > ' . $paidSql . ' THEN (' . $totalSql . ' - ' . $paidSql . ') ELSE 0 END), 0) AS unpaid_balance_kobo
+         FROM fashion_orders o
+         WHERE o.tenant_id = :tenant_id',
+        ['today_overdue' => $today, 'today_due' => $today]
+    );
+    $row = $rows[0] ?? [];
+    return [
+        'total' => (int) ($row['total_count'] ?? 0),
+        'overdue' => (int) ($row['overdue_count'] ?? 0),
+        'due_today' => (int) ($row['due_today_count'] ?? 0),
+        'unpaid_balance_kobo' => (int) ($row['unpaid_balance_kobo'] ?? 0),
+    ];
 }
 
 function order_find(string $id): ?array
@@ -245,7 +359,11 @@ function order_money_sql(): array
     return [$totalSql, $paidSql];
 }
 
-function order_conditions(string $filter, string $search): array
+/**
+ * @param array{from?:?string,to?:?string} $options
+ * @return array{0:string,1:array<string,mixed>}
+ */
+function order_conditions(string $filter, string $search, array $options = []): array
 {
     $stageRole = order_stage_sql('role');
     [$totalSql, $paidSql] = order_money_sql();
@@ -253,6 +371,19 @@ function order_conditions(string $filter, string $search): array
     $params = [];
     if ($filter === 'overdue' || $filter === 'due_today') {
         $params['today'] = app_today();
+    }
+    $from = order_parse_date(isset($options['from']) ? (string) $options['from'] : null);
+    $to = order_parse_date(isset($options['to']) ? (string) $options['to'] : null);
+    if ($from !== null && $to !== null && $from > $to) {
+        [$from, $to] = [$to, $from];
+    }
+    if ($from !== null) {
+        $sql .= ' AND o.due_date >= :due_from';
+        $params['due_from'] = $from;
+    }
+    if ($to !== null) {
+        $sql .= ' AND o.due_date <= :due_to';
+        $params['due_to'] = $to;
     }
     if ($search !== '') {
         $like = like_contains($search);
@@ -264,15 +395,21 @@ function order_conditions(string $filter, string $search): array
     return [$sql, $params];
 }
 
-function order_rows(string $filter, string $search, ?string $id, int $page = 1): array
+/**
+ * @param array{from?:?string,to?:?string,sort?:string} $options
+ */
+function order_rows(string $filter, string $search, ?string $id, int $page = 1, array $options = []): array
 {
     $stageCode = order_stage_sql('code');
     $stageName = order_stage_sql('name');
     $stageRole = order_stage_sql('role');
     [$totalSql, $paidSql] = order_money_sql();
+    $itemCountSql = '(SELECT COALESCE(SUM(i.quantity), 0) FROM fashion_order_items i WHERE i.order_id = o.id AND i.tenant_id = :tenant_id)';
     $sql = 'SELECT o.id, o.order_number, o.customer_id, o.due_date, o.urgent, o.created_at,
             o.customer_supplied_fabric, o.yards_received, o.yards_used,
-            c.name AS customer_name, ' . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo, '
+            c.name AS customer_name, c.phone AS customer_phone, '
+            . $itemCountSql . ' AS item_count, '
+            . $totalSql . ' AS total_kobo, ' . $paidSql . ' AS paid_kobo, '
             . $stageCode . ' AS stage_code, ' . $stageName . ' AS stage_name, ' . $stageRole . ' AS stage_role
          FROM fashion_orders o
          INNER JOIN fashion_customers c ON c.id = o.customer_id AND c.tenant_id = :tenant_id
@@ -282,12 +419,13 @@ function order_rows(string $filter, string $search, ?string $id, int $page = 1):
         $sql .= ' AND o.id = :order_id';
         $params['order_id'] = $id;
     } else {
-        [$where, $params] = order_conditions($filter, $search);
+        [$where, $params] = order_conditions($filter, $search, $options);
         $sql .= $where;
         $page = list_page($page);
-        $sql .= ' ORDER BY o.due_date ASC, o.order_number ASC LIMIT :row_limit OFFSET :row_offset';
-        $params['row_limit'] = list_page_size();
-        $params['row_offset'] = ($page - 1) * list_page_size();
+        $sql .= order_sort_sql((string) ($options['sort'] ?? 'newest'));
+        $sql .= ' LIMIT :row_limit OFFSET :row_offset';
+        $params['row_limit'] = order_list_page_size();
+        $params['row_offset'] = ($page - 1) * order_list_page_size();
     }
     $rows = [];
     foreach (db_query($sql, $params) as $row) {
@@ -322,6 +460,60 @@ function order_filter_sql(string $filter, string $stageRole, string $totalSql, s
     return '';
 }
 
+function order_display_customer_name(string $name): string
+{
+    $clean = preg_replace('/\s*\[demo\]\s*/iu', ' ', $name);
+    $clean = is_string($clean) ? trim(preg_replace('/\s{2,}/', ' ', $clean) ?? $clean) : trim($name);
+    return $clean !== '' ? $clean : trim($name);
+}
+
+/**
+ * Map stage code/role to a list badge key: pending|processing|ready|completed|cancelled.
+ *
+ * @return array{key:string,label:string,tone:string}
+ */
+function order_status_badge(?string $code, ?string $name, ?string $role): array
+{
+    $code = is_string($code) && $code !== '' ? strtolower($code) : null;
+    $role = is_string($role) && $role !== '' ? $role : null;
+    if ($code === 'cancelled') {
+        return ['key' => 'cancelled', 'label' => t('status_cancelled'), 'tone' => 'danger'];
+    }
+    if ($role === 'finished' || $code === 'delivered' || $code === 'completed') {
+        return ['key' => 'completed', 'label' => t('status_completed'), 'tone' => 'success'];
+    }
+    if ($role === 'ready' || $code === 'ready') {
+        return ['key' => 'ready', 'label' => t('status_ready'), 'tone' => 'purple'];
+    }
+    $processing = ['cutting', 'sewing', 'embroidery', 'finishing', 'fitting', 'in_progress', 'production'];
+    if ($code !== null && in_array($code, $processing, true)) {
+        return ['key' => 'processing', 'label' => t('status_processing'), 'tone' => 'blue'];
+    }
+    if ($code === null || $code === 'new' || $role === 'open' || $role === null) {
+        $label = is_string($name) && $name !== '' ? $name : t('status_pending');
+        return ['key' => 'pending', 'label' => $label, 'tone' => 'orange'];
+    }
+    return [
+        'key' => 'processing',
+        'label' => is_string($name) && $name !== '' ? $name : t('status_processing'),
+        'tone' => 'blue',
+    ];
+}
+
+/**
+ * @return array{key:string,label:string,tone:string}
+ */
+function order_payment_badge(int $totalKobo, int $paidKobo): array
+{
+    if ($paidKobo >= $totalKobo) {
+        return ['key' => 'paid', 'label' => t('paid'), 'tone' => 'success'];
+    }
+    if ($paidKobo > 0) {
+        return ['key' => 'part_paid', 'label' => t('part_paid'), 'tone' => 'orange'];
+    }
+    return ['key' => 'unpaid', 'label' => t('unpaid'), 'tone' => 'danger'];
+}
+
 function order_present(array $row): array
 {
     $total = (int) $row['total_kobo'];
@@ -336,20 +528,44 @@ function order_present(array $row): array
     $usedHundredths = $usedRaw === null || $usedRaw === '' ? null : (int) $usedRaw;
     $leftHundredths = yards_left($receivedHundredths ?? 0, $usedHundredths ?? 0);
     $stageRole = is_string($role) && in_array($role, ['open', 'ready', 'finished'], true) ? $role : null;
+    $stageCode = is_string($code) && $code !== '' ? $code : null;
+    $stageName = is_string($name) && $name !== '' ? $name : null;
+    $customerName = (string) $row['customer_name'];
+    $today = app_today();
+    $dueDate = (string) $row['due_date'];
+    $finished = $stageRole === 'finished';
+    $dueTone = 'normal';
+    if (!$finished && $dueDate < $today) {
+        $dueTone = 'overdue';
+    } elseif (!$finished && $dueDate === $today) {
+        $dueTone = 'today';
+    }
+    $status = order_status_badge($stageCode, $stageName, $stageRole);
+    $payment = order_payment_badge($total, $paid);
     return [
         'id' => (string) $row['id'],
         'order_number' => (string) $row['order_number'],
         'customer_id' => (string) $row['customer_id'],
-        'customer_name' => (string) $row['customer_name'],
-        'due_date' => (string) $row['due_date'],
+        'customer_name' => $customerName,
+        'customer_display_name' => order_display_customer_name($customerName),
+        'customer_phone' => (string) ($row['customer_phone'] ?? ''),
+        'item_count' => (int) ($row['item_count'] ?? 0),
+        'due_date' => $dueDate,
+        'due_tone' => $dueTone,
         'urgent' => (int) $row['urgent'] === 1,
         'created_at' => (string) $row['created_at'],
         'total_kobo' => $total,
         'paid_kobo' => $paid,
         'balance_kobo' => $total - $paid,
         'paid' => $paid >= $total,
-        'stage_code' => is_string($code) && $code !== '' ? $code : null,
-        'stage_name' => is_string($name) && $name !== '' ? $name : null,
+        'payment_key' => $payment['key'],
+        'payment_label' => $payment['label'],
+        'payment_tone' => $payment['tone'],
+        'status_key' => $status['key'],
+        'status_label' => $status['label'],
+        'status_tone' => $status['tone'],
+        'stage_code' => $stageCode,
+        'stage_name' => $stageName,
         'stage_role' => $stageRole,
         'fabric_supplied' => $supplied,
         'received_hundredths' => $receivedHundredths,

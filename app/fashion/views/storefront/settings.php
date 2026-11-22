@@ -4,6 +4,8 @@
 /** @var array $old */
 /** @var string $public_url */
 ?>
+<?php require __DIR__ . '/../partials/settings_nav.php'; ?>
+<div class="settings-layout">
 <section class="card">
     <h1><?= e(t('storefront_settings')) ?></h1>
     <p class="meta"><?= e(t('storefront_help')) ?></p>
@@ -24,3 +26,4 @@
         <p class="meta"><?= e(t('storefront_link')) ?>: <a href="<?= e($public_url) ?>"><?= e($public_url) ?></a></p>
     <?php endif; ?>
 </section>
+</div>

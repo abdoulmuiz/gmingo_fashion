@@ -145,6 +145,29 @@ function money(int $kobo): string
     return format_naira($kobo);
 }
 
+/** Compact ₦ label for tight UI (charts, narrow KPI cards). */
+function money_compact(int $kobo): string
+{
+    $negative = $kobo < 0;
+    $naira = abs($kobo) / 100.0;
+    if ($naira >= 1000000) {
+        $v = $naira / 1000000.0;
+        $num = $v >= 10
+            ? number_format((int) round($v), 0, '.', ',')
+            : rtrim(rtrim(number_format($v, 1, '.', ''), '0'), '.');
+        $text = '₦' . $num . 'M';
+    } elseif ($naira >= 1000) {
+        $v = $naira / 1000.0;
+        $num = $v >= 10
+            ? number_format((int) round($v), 0, '.', ',')
+            : rtrim(rtrim(number_format($v, 1, '.', ''), '0'), '.');
+        $text = '₦' . $num . 'K';
+    } else {
+        $text = '₦' . number_format((int) round($naira), 0, '.', ',');
+    }
+    return $negative ? '-' . $text : $text;
+}
+
 function flash_set(string $key, string $message): void
 {
     if (!preg_match('/^[a-z0-9_]{1,32}$/', $key)) {

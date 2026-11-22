@@ -14,6 +14,8 @@
     <?php endif; ?>
     <p><a class="btn" href="<?= e(url('/platform/tenants')) ?>"><?= e(t('platform_tenants')) ?></a></p>
     <p><a class="btn btn-quiet" href="<?= e(url('/platform/plans')) ?>"><?= e(t('platform_plans')) ?></a></p>
+    <p><a class="btn btn-quiet" href="<?= e(url('/platform/payments')) ?>"><?= e(t('platform_payments')) ?></a></p>
+    <p><a class="btn btn-quiet" href="<?= e(url('/platform/gateway')) ?>"><?= e(t('platform_gateway')) ?></a></p>
     <form method="post" action="<?= e(url('/logout')) ?>">
         <?= csrf_field() ?>
         <button class="btn btn-quiet" type="submit"><?= e(t('logout')) ?></button>
